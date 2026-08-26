@@ -1,0 +1,302 @@
+[
+  {
+    "id": "q001",
+    "category": "rules",
+    "question": "What is the standard number of holes on a golf course?",
+    "expected_contains": ["18"]
+  },
+  {
+    "id": "q002",
+    "category": "glossary",
+    "question": "What is a bogey in golf?",
+    "expected_contains": ["one", "over par"]
+  },
+  {
+    "id": "q003",
+    "category": "glossary",
+    "question": "What is a birdie?",
+    "expected_contains": ["one", "under par"]
+  },
+  {
+    "id": "q004",
+    "category": "glossary",
+    "question": "What is an eagle in golf scoring?",
+    "expected_contains": ["two", "under par"]
+  },
+  {
+    "id": "q005",
+    "category": "glossary",
+    "question": "What is an albatross in golf?",
+    "expected_contains": ["three", "under par"]
+  },
+  {
+    "id": "q006",
+    "category": "glossary",
+    "question": "What does 'fore' mean on a golf course?",
+    "expected_contains": ["warning"]
+  },
+  {
+    "id": "q007",
+    "category": "glossary",
+    "question": "What is a mulligan?",
+    "expected_contains": ["do-over", "replay"]
+  },
+  {
+    "id": "q008",
+    "category": "glossary",
+    "question": "What is a scratch golfer?",
+    "expected_contains": ["handicap", "zero"]
+  },
+  {
+    "id": "q009",
+    "category": "glossary",
+    "question": "What is a hole in one?",
+    "expected_contains": ["ace", "one stroke"]
+  },
+  {
+    "id": "q010",
+    "category": "rules",
+    "question": "What is the difference between stroke play and match play?",
+    "expected_contains": ["total strokes", "holes"]
+  },
+  {
+    "id": "q011",
+    "category": "rules",
+    "question": "What is Stableford scoring?",
+    "expected_contains": ["points"]
+  },
+  {
+    "id": "q012",
+    "category": "rules",
+    "question": "Who jointly writes the Rules of Golf?",
+    "expected_contains": ["R&A", "USGA"]
+  },
+  {
+    "id": "q013",
+    "category": "rules",
+    "question": "What is the World Handicap System?",
+    "expected_contains": ["handicap", "USGA", "R&A"]
+  },
+  {
+    "id": "q014",
+    "category": "governing_bodies",
+    "question": "What is the R&A responsible for?",
+    "expected_contains": ["rules", "Open"]
+  },
+  {
+    "id": "q015",
+    "category": "governing_bodies",
+    "question": "What does USGA stand for?",
+    "expected_contains": ["United States Golf Association"]
+  },
+  {
+    "id": "q016",
+    "category": "governing_bodies",
+    "question": "What is the LPGA?",
+    "expected_contains": ["Ladies", "professional"]
+  },
+  {
+    "id": "q017",
+    "category": "governing_bodies",
+    "question": "What is the International Golf Federation?",
+    "expected_contains": ["Olympic", "federation"]
+  },
+  {
+    "id": "q018",
+    "category": "governing_bodies",
+    "question": "How is the PGA of America different from the PGA Tour?",
+    "expected_contains": ["club professionals", "tour"]
+  },
+  {
+    "id": "q019",
+    "category": "history",
+    "question": "Where did golf originate?",
+    "expected_contains": ["Scotland"]
+  },
+  {
+    "id": "q020",
+    "category": "history",
+    "question": "Why is the Old Course at St Andrews called the home of golf?",
+    "expected_contains": ["St Andrews", "Scotland"]
+  },
+  {
+    "id": "q021",
+    "category": "history",
+    "question": "Who was Bobby Jones and why is he important to golf history?",
+    "expected_contains": ["amateur", "Grand Slam", "Augusta"]
+  },
+  {
+    "id": "q022",
+    "category": "courses",
+    "question": "Where is Augusta National Golf Club located?",
+    "expected_contains": ["Georgia", "Augusta"]
+  },
+  {
+    "id": "q023",
+    "category": "courses",
+    "question": "What is famous about the 17th hole at TPC Sawgrass?",
+    "expected_contains": ["island"]
+  },
+  {
+    "id": "q024",
+    "category": "courses",
+    "question": "Which major is played at Pebble Beach on a rotating basis?",
+    "expected_contains": ["U.S. Open"]
+  },
+  {
+    "id": "q025",
+    "category": "courses",
+    "question": "What is a links golf course?",
+    "expected_contains": ["coast", "sand"]
+  },
+  {
+    "id": "q026",
+    "category": "tournaments",
+    "question": "What are the four men's major championships?",
+    "expected_contains": ["Masters", "Open", "U.S. Open", "PGA"]
+  },
+  {
+    "id": "q027",
+    "category": "tournaments",
+    "question": "When is the Masters played and where?",
+    "expected_contains": ["April", "Augusta"]
+  },
+  {
+    "id": "q028",
+    "category": "tournaments",
+    "question": "What is The Open Championship also known as?",
+    "expected_contains": ["British Open"]
+  },
+  {
+    "id": "q029",
+    "category": "tournaments",
+    "question": "What is the Ryder Cup?",
+    "expected_contains": ["Europe", "United States", "biennial"]
+  },
+  {
+    "id": "q030",
+    "category": "tournaments",
+    "question": "How does the Solheim Cup relate to the Ryder Cup?",
+    "expected_contains": ["women"]
+  },
+  {
+    "id": "q031",
+    "category": "tournaments",
+    "question": "What is the FedEx Cup?",
+    "expected_contains": ["playoff", "PGA Tour"]
+  },
+  {
+    "id": "q032",
+    "category": "tournaments",
+    "question": "Name the current LPGA major championships.",
+    "expected_contains": ["Chevron", "Women's PGA", "U.S. Women's Open", "Evian", "Women's British Open"]
+  },
+  {
+    "id": "q033",
+    "category": "players",
+    "question": "How many major championships did Jack Nicklaus win?",
+    "expected_contains": ["18"]
+  },
+  {
+    "id": "q034",
+    "category": "players",
+    "question": "What is Tiger Woods known for in golf?",
+    "expected_contains": ["majors", "15"]
+  },
+  {
+    "id": "q035",
+    "category": "players",
+    "question": "Who is Annika Sörenstam?",
+    "expected_contains": ["LPGA", "major"]
+  },
+  {
+    "id": "q036",
+    "category": "players",
+    "question": "Who is Scottie Scheffler?",
+    "expected_contains": ["PGA", "world"]
+  },
+  {
+    "id": "q037",
+    "category": "players",
+    "question": "Who is Ludvig Åberg and why is he considered a rising star?",
+    "expected_contains": ["Sweden", "amateur"]
+  },
+  {
+    "id": "q038",
+    "category": "players",
+    "question": "Who is Rose Zhang?",
+    "expected_contains": ["amateur", "LPGA"]
+  },
+  {
+    "id": "q039",
+    "category": "players",
+    "question": "What is special about Nick Dunlap's amateur win?",
+    "expected_contains": ["amateur", "PGA Tour"]
+  },
+  {
+    "id": "q040",
+    "category": "players",
+    "question": "Who is Nelly Korda?",
+    "expected_contains": ["LPGA"]
+  },
+  {
+    "id": "q041",
+    "category": "equipment",
+    "question": "What is the difference between a wood and an iron?",
+    "expected_contains": ["distance", "fairway"]
+  },
+  {
+    "id": "q042",
+    "category": "equipment",
+    "question": "What is a wedge used for?",
+    "expected_contains": ["short", "green"]
+  },
+  {
+    "id": "q043",
+    "category": "equipment",
+    "question": "What does a putter do?",
+    "expected_contains": ["green"]
+  },
+  {
+    "id": "q044",
+    "category": "equipment",
+    "question": "What is the dimple pattern on a golf ball for?",
+    "expected_contains": ["aerodynamic", "flight"]
+  },
+  {
+    "id": "q045",
+    "category": "foundations",
+    "question": "What is The First Tee?",
+    "expected_contains": ["youth", "life skills"]
+  },
+  {
+    "id": "q046",
+    "category": "foundations",
+    "question": "What is the TGR Foundation?",
+    "expected_contains": ["Tiger Woods"]
+  },
+  {
+    "id": "q047",
+    "category": "foundations",
+    "question": "What does the Evans Scholars Foundation do?",
+    "expected_contains": ["caddie", "scholarship"]
+  },
+  {
+    "id": "q048",
+    "category": "glossary",
+    "question": "What is fourball?",
+    "expected_contains": ["better ball", "two"]
+  },
+  {
+    "id": "q049",
+    "category": "glossary",
+    "question": "What is a foursome in golf?",
+    "expected_contains": ["alternate shot"]
+  },
+  {
+    "id": "q050",
+    "category": "rules",
+    "question": "Who governs golf's rules outside the United States and Mexico?",
+    "expected_contains": ["R&A"]
+  }
+]

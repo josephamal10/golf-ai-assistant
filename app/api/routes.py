@@ -1,0 +1,28 @@
+from fastapi import APIRouter, HTTPException
+
+from app.models.schemas import AskRequest, AskResponse
+from app.rag.pipeline import StaticRagPipeline
+
+
+router = APIRouter()
+_pipeline: StaticRagPipeline | None = None
+
+
+def get_pipeline() -> StaticRagPipeline:
+    global _pipeline
+    if _pipeline is None:
+        _pipeline = StaticRagPipeline()
+    return _pipeline
+
+
+@router.post('/ask', response_model=AskResponse)
+def ask(payload: AskRequest) -> AskResponse:
+    question = payload.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail='Question cannot be empty.')
+    try:
+        return get_pipeline().ask(question)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail='Failed to answer question.') from exc
