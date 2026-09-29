@@ -1,8 +1,8 @@
 # Golf AI Assistant
 
 Production-oriented golf knowledge assistant for internship delivery. Phase 1 is a
-static RAG pipeline: retrieve from a vector index, then generate answers with Claude
-**only from retrieved context**, with citations.
+static RAG pipeline: retrieve from a vector index, then generate answers with an LLM
+(Gemini by default, Claude optional) **only from retrieved context**, with citations.
 
 Later phases add a query router (live news / rankings) and retrieved expert
 predictions that are labeled as opinion, never model-generated forecasts.
@@ -11,34 +11,35 @@ predictions that are labeled as opinion, never model-generated forecasts.
 
 ```
 Question
-   → Voyage embedding
-   → Pinecone top-k chunks
-   → Claude Sonnet (grounded generation + citations)
+   → Jina embedding
+   → Pinecone top-k chunks (grouped by source article)
+   → Gemini or Claude (grounded generation + citations)
    → FastAPI /ask  →  Streamlit UI
 ```
 
 ## Stack
 
-| Layer        | Choice                          |
-|--------------|---------------------------------|
-| API          | Python, FastAPI                 |
-| Embeddings   | Voyage AI (`voyage-3.5`)        |
-| Vector DB    | Pinecone serverless             |
-| Generation   | Anthropic Claude Sonnet         |
-| UI           | Streamlit (temporary)           |
-| Sources      | Wikipedia (CC BY-SA) + optional official PDFs |
+| Layer        | Choice                                              |
+|--------------|-----------------------------------------------------|
+| API          | Python, FastAPI                                     |
+| Embeddings   | Jina AI (`jina-embeddings-v4`, 1024-d)              |
+| Vector DB    | Pinecone serverless                                 |
+| Generation   | Google Gemini (default) or Anthropic Claude, via `LLM_PROVIDER` |
+| UI           | Streamlit (temporary)                               |
+| Sources      | Wikipedia (CC BY-SA) + optional official PDFs       |
 
 ## Setup
 
 ```powershell
-cd "C:\Nanonino files\golf-ai-assistant"
+cd "C:\Nanonino files-RAG\golf-ai-assistant"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
 ```
 
-Fill in `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, and `PINECONE_API_KEY` in `.env`.
+Fill in `JINA_API_KEY`, `PINECONE_API_KEY`, and `GOOGLE_API_KEY` in `.env`. To generate
+with Claude instead, set `LLM_PROVIDER=claude` and fill in `ANTHROPIC_API_KEY`.
 
 ## Ingest static knowledge
 
@@ -49,11 +50,17 @@ python scripts/collect_data.py
 python scripts/chunk_data.py
 ```
 
-Embed and upsert (needs Voyage + Pinecone):
+Chunking is section-aware: Wikipedia back matter (See also, References, External
+links, ...) is dropped, each chunk records its section, and short sections are merged.
+
+Embed and upsert (needs Jina + Pinecone):
 
 ```powershell
-python scripts/embed_and_upsert.py
+python scripts/embed_and_upsert.py --recreate
 ```
+
+`--recreate` deletes and rebuilds the index. Use it after re-chunking or changing the
+embedding model, otherwise vectors from the old chunks stay in the index.
 
 Optional: drop a licensed Rules of Golf PDF in `data/raw/pdfs/` and re-run collect
 (the PDF collector picks up `*.pdf` in that folder).
@@ -62,25 +69,46 @@ Optional: drop a licensed Rules of Golf PDF in `data/raw/pdfs/` and re-run colle
 
 ```powershell
 # API
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8001
 
 # UI (separate terminal)
 streamlit run frontend/streamlit_app.py
 ```
 
-- Health: `GET http://127.0.0.1:8000/health`
-- Ask: `POST http://127.0.0.1:8000/ask` with `{"question": "What is a bogey?"}`
+- Health: `GET http://127.0.0.1:8001/health`
+- Ask: `POST http://127.0.0.1:8001/ask` with `{"question": "What is a bogey?"}`
+
+If the embedding or LLM provider is rate limited or out of quota, `/ask` returns
+HTTP 429 with a message instead of a generic 500.
 
 ## Eval
 
-Starter set: `data/eval/golf_eval_set.json` (50 questions across categories).
+Eval set: `data/eval/golf_eval_set.json` (50 questions across categories). Each item has
+`expected_contains` (answer keywords) and `expected_sources` (acceptable articles).
+
+Retrieval only: no LLM calls, no API server needed, runs in 1–2 minutes:
+
+```powershell
+python scripts/evaluate_retrieval.py
+```
+
+It reports whether an expected article was retrieved (hit rate, top-1, MRR) and whether
+the prompt context contains the expected keywords. Output: `data/eval/last_retrieval_run.json`.
+
+End to end (answers from `/ask`; the API must be running):
 
 ```powershell
 python scripts/evaluate.py
 ```
 
-That hits `/ask` and writes `data/eval/last_run.json` for manual scoring. The API
-must be running first.
+It waits 28 seconds between questions to respect free-tier limits, stops early at the
+first HTTP 429, and writes `data/eval/last_run.json`. Use `--limit N` to run fewer.
+
+## Tests
+
+```powershell
+python -m pytest
+```
 
 ## Source and license notes
 
@@ -97,5 +125,5 @@ data/catalogs/  Curated Wikipedia title list
 data/eval/      Hand-built Q&A eval set
 frontend/       Streamlit UI
 scripts/        collect → chunk → embed → evaluate
-tests/          Unit tests (chunker, schemas)
+tests/          Unit tests (chunker, citations, schemas)
 ```

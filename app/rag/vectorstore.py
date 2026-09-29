@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from pinecone import Pinecone, ServerlessSpec
@@ -12,11 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 class VectorStore:
-    def __init__(self) -> None:
+    def __init__(self, recreate: bool = False) -> None:
         if not settings.pinecone_api_key:
             raise RuntimeError('PINECONE_API_KEY is missing. Add it to .env')
         self._pc = Pinecone(api_key=settings.pinecone_api_key)
         self.index_name = settings.pinecone_index_name
+        if recreate:
+            self._delete_index()
         self._ensure_index()
         self._index = self._pc.Index(self.index_name)
 
@@ -35,13 +38,30 @@ class VectorStore:
                 resolved.add(item.name)
         return resolved
 
+    def _delete_index(self) -> None:
+        if self.index_name not in self._list_index_names():
+            logger.info('Pinecone index %s does not exist; nothing to delete', self.index_name)
+            return
+        logger.info('Deleting Pinecone index %s', self.index_name)
+        self._pc.delete_index(self.index_name)
+        for _ in range(60):
+            if self.index_name not in self._list_index_names():
+                logger.info('Deleted Pinecone index %s', self.index_name)
+                return
+            time.sleep(2)
+        raise RuntimeError(f'Timed out waiting for Pinecone index {self.index_name} to delete')
+
     def _ensure_index(self) -> None:
         if self.index_name in self._list_index_names():
             return
-        logger.info('Creating Pinecone index %s', self.index_name)
+        logger.info(
+            'Creating Pinecone index %s dim=%s',
+            self.index_name,
+            settings.jina_embed_dim,
+        )
         self._pc.create_index(
             name=self.index_name,
-            dimension=settings.voyage_embed_dim,
+            dimension=settings.jina_embed_dim,
             metric='cosine',
             spec=ServerlessSpec(
                 cloud=settings.pinecone_cloud,
@@ -61,6 +81,21 @@ class VectorStore:
                 min(start + batch_size, len(vectors)),
                 len(vectors),
             )
+
+    def stats(self) -> dict[str, Any]:
+        result = self._index.describe_index_stats()
+        namespaces = getattr(result, 'namespaces', None) or {}
+        static = namespaces.get('static') if isinstance(namespaces, dict) else None
+        ns_count = None
+        if static is not None:
+            ns_count = getattr(static, 'vector_count', None)
+            if ns_count is None and isinstance(static, dict):
+                ns_count = static.get('vector_count')
+        return {
+            'dimension': getattr(result, 'dimension', None),
+            'total_vector_count': getattr(result, 'total_vector_count', None),
+            'static_vector_count': ns_count,
+        }
 
     def query(
         self,

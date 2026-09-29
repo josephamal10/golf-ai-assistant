@@ -19,3 +19,5 @@ class AskResponse(BaseModel):
     route: str
     retrieved_chunk_ids: list[str]
     insufficient_context: bool = False
+    provider: str = ''
+    model: str = ''

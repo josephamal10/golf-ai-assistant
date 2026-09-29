@@ -21,14 +21,18 @@ class Settings(BaseSettings):
     anthropic_generation_model: str = 'claude-sonnet-4-20250514'
     anthropic_classifier_model: str = 'claude-haiku-4-5-20251001'
 
-    voyage_api_key: str = ''
-    voyage_embed_model: str = 'voyage-3.5'
-    voyage_embed_dim: int = 1024
+    jina_api_key: str = ''
+    jina_embed_model: str = 'jina-embeddings-v4'
+    jina_embed_dim: int = 1024
 
     pinecone_api_key: str = ''
     pinecone_index_name: str = 'golf-ai-assistant'
     pinecone_cloud: str = 'aws'
     pinecone_region: str = 'us-east-1'
+
+    google_api_key: str = ''
+    gemini_generation_model: str = 'gemini-3.6-flash'
+    llm_provider: str = 'gemini'
 
     retrieve_top_k: int = 6
     retrieve_min_score: float = 0.25

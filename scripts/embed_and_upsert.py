@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import sys
@@ -12,13 +13,14 @@ if str(ROOT) not in sys.path:
 
 from app.config import DATA_DIR
 from app.logging_config import configure_logging
+from app.rag.chunker import embedding_text
 from app.rag.embeddings import EmbeddingClient
 from app.rag.vectorstore import VectorStore
 
 
 logger = logging.getLogger(__name__)
 CHUNKS_PATH = DATA_DIR / 'processed' / 'chunks.jsonl'
-EMBED_BATCH = 32
+EMBED_BATCH = 8
 
 
 def load_chunks() -> list[dict]:
@@ -36,6 +38,7 @@ def load_chunks() -> list[dict]:
 def to_vector_record(chunk: dict, values: list[float]) -> dict:
     metadata = {
         'title': chunk['title'],
+        'section': chunk.get('section', ''),
         'category': chunk['category'],
         'source': chunk['source'],
         'url': chunk.get('url', ''),
@@ -49,20 +52,35 @@ def to_vector_record(chunk: dict, values: list[float]) -> dict:
 
 def main() -> None:
     configure_logging()
+    parser = argparse.ArgumentParser(description='Embed chunks.jsonl and upsert to Pinecone.')
+    parser.add_argument(
+        '--recreate',
+        action='store_true',
+        help='Delete and rebuild the index first. Use after re-chunking or changing the '
+        'embedding model, so stale vectors do not linger.',
+    )
+    args = parser.parse_args()
+
     chunks = load_chunks()
     embeddings = EmbeddingClient()
-    store = VectorStore()
-    records: list[dict] = []
+    store = VectorStore(recreate=args.recreate)
+    processed = 0
 
     for start in range(0, len(chunks), EMBED_BATCH):
         batch = chunks[start:start + EMBED_BATCH]
-        vectors = embeddings.embed_documents([c['text'] for c in batch])
-        for chunk, values in zip(batch, vectors):
-            records.append(to_vector_record(chunk, values))
-        logger.info('Embedded %s / %s chunks', min(start + EMBED_BATCH, len(chunks)), len(chunks))
+        vectors = embeddings.embed_documents([embedding_text(c) for c in batch])
+        records = [to_vector_record(chunk, values) for chunk, values in zip(batch, vectors)]
+        store.upsert(records, namespace='static')
+        processed += len(records)
+        logger.info('Embedded and upserted %s / %s chunks', processed, len(chunks))
 
-    store.upsert(records, namespace='static')
-    print(f'Upserted {len(records)} chunks to Pinecone index.')
+    stats = store.stats()
+    print(f'Upserted {processed} chunks to Pinecone index.')
+    print(
+        f"Pinecone stats: dimension={stats.get('dimension')} "
+        f"total={stats.get('total_vector_count')} "
+        f"static={stats.get('static_vector_count')}"
+    )
 
 
 if __name__ == '__main__':

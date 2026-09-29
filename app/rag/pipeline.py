@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.models.schemas import AskResponse, Source
-from app.rag.generator import GroundedGenerator
+from app.rag.generator import Generator, build_generator, group_by_source
 from app.rag.retriever import Retriever
 
 
@@ -11,10 +11,10 @@ class StaticRagPipeline:
     def __init__(
         self,
         retriever: Retriever | None = None,
-        generator: GroundedGenerator | None = None,
+        generator: Generator | None = None,
     ) -> None:
         self.retriever = retriever or Retriever()
-        self.generator = generator or GroundedGenerator()
+        self.generator = generator or build_generator()
 
     def ask(self, question: str) -> AskResponse:
         matches = self.retriever.retrieve(question)
@@ -27,19 +27,16 @@ class StaticRagPipeline:
             route='static',
             retrieved_chunk_ids=[m['id'] for m in matches],
             insufficient_context=insufficient,
+            provider=getattr(self.generator, 'provider', ''),
+            model=getattr(self.generator, 'model', ''),
         )
 
 
 def _dedupe_sources(matches: list[dict]) -> list[Source]:
-    seen: set[str] = set()
+    # Same grouping as format_context, so source n matches the [n] the model cites.
     sources: list[Source] = []
-    n = 1
-    for match in matches:
-        meta = match.get('metadata') or {}
-        key = f"{meta.get('title', '')}|{meta.get('url', '')}"
-        if key in seen:
-            continue
-        seen.add(key)
+    for n, chunks in enumerate(group_by_source(matches), start=1):
+        meta = chunks[0]
         sources.append(
             Source(
                 n=n,
@@ -49,5 +46,4 @@ def _dedupe_sources(matches: list[dict]) -> list[Source]:
                 source=str(meta.get('source') or ''),
             )
         )
-        n += 1
     return sources

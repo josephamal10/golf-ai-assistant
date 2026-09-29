@@ -16,6 +16,10 @@ data/raw/
 data/processed/
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+# Eval run outputs (regenerated on every run)
+data/eval/last_run.json
+data/eval/last_retrieval_run.json
+data/eval/retrieval_baseline_*.json
 
 # OS
 Thumbs.db

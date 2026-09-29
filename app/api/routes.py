@@ -1,9 +1,12 @@
 from fastapi import APIRouter, HTTPException
+import logging
 
 from app.models.schemas import AskRequest, AskResponse
+from app.rag.errors import RateLimitedError
 from app.rag.pipeline import StaticRagPipeline
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 _pipeline: StaticRagPipeline | None = None
 
@@ -22,7 +25,10 @@ def ask(payload: AskRequest) -> AskResponse:
         raise HTTPException(status_code=400, detail='Question cannot be empty.')
     try:
         return get_pipeline().ask(question)
+    except RateLimitedError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
+        logger.exception('Ask failed')
         raise HTTPException(status_code=500, detail='Failed to answer question.') from exc
