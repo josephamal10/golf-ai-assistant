@@ -38,10 +38,15 @@ def keyword_verdict(answer: str, expected: list) -> tuple[bool, list[str]]:
 def main() -> None:
     parser = argparse.ArgumentParser(description='Run the golf eval set against /ask.')
     parser.add_argument('--base-url', default='http://127.0.0.1:8001')
+    parser.add_argument('--eval-file', type=Path, default=EVAL_PATH)
     parser.add_argument('--limit', type=int, default=0, help='0 = all questions')
     args = parser.parse_args()
+    out_path = (
+        OUT_PATH if args.eval_file.resolve() == EVAL_PATH
+        else OUT_PATH.with_name(f'last_run.{args.eval_file.stem}.json')
+    )
 
-    items = json.loads(EVAL_PATH.read_text(encoding='utf-8'))
+    items = json.loads(args.eval_file.read_text(encoding='utf-8'))
     if args.limit:
         items = items[: args.limit]
 
@@ -94,6 +99,7 @@ def main() -> None:
     report = {
         'ran_at': datetime.now(timezone.utc).isoformat(),
         'base_url': args.base_url,
+        'eval_file': str(args.eval_file),
         'n': n,
         'n_pass': n_pass,
         'n_fail': n_fail,
@@ -101,9 +107,9 @@ def main() -> None:
         'stopped_rate_limited': rate_limited,
         'results': results,
     }
-    OUT_PATH.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+    out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'PASS={n_pass} FAIL={n_fail} MISSING={n_missing} / {n}')
-    print(f'Wrote {OUT_PATH}')
+    print(f'Wrote {out_path}')
 
 
 if __name__ == '__main__':

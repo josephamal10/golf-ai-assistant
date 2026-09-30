@@ -92,6 +92,13 @@ the provider's reason; the UI shows both as distinct, actionable messages.
 Eval set: `data/eval/golf_eval_set.json` (50 questions across categories). Each item has
 `expected_contains` (answer keywords) and `expected_sources` (acceptable articles).
 
+Hard set: `data/eval/golf_eval_hard.json` (25 questions): paraphrased terms that don't
+name the article, specific facts buried in articles, and out-of-scope questions (live
+results, predictions, betting, non-golf) whose expected answer is a refusal. Run either
+script on it with `--eval-file data/eval/golf_eval_hard.json`; results go to
+`last_*.golf_eval_hard.json`. Out-of-scope items have no expected article, so the
+retrieval eval reports them without scoring them.
+
 Retrieval only: no LLM calls, no API server needed, runs in 1–2 minutes:
 
 ```powershell

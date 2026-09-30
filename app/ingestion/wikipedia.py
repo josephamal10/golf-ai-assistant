@@ -45,7 +45,8 @@ def clean_extract(text: str) -> str:
 def fetch_extract(client: httpx.Client, wiki_title: str) -> dict[str, Any] | None:
     params = {
         'action': 'query',
-        'prop': 'extracts|info',
+        'prop': 'extracts|info|pageprops',
+        'ppprop': 'disambiguation',
         'explaintext': '1',
         'inprop': 'url',
         'redirects': '1',
@@ -59,6 +60,11 @@ def fetch_extract(client: httpx.Client, wiki_title: str) -> dict[str, Any] | Non
     if not page or page.get('missing') is not None or not page.get('extract'):
         return None
     return page
+
+
+def is_disambiguation(page: dict[str, Any]) -> bool:
+    """A "may refer to" list of links (e.g. 'Fairway'), not an article worth indexing."""
+    return 'disambiguation' in (page.get('pageprops') or {})
 
 
 def page_to_document(source: WikiSource, page: dict[str, Any]) -> dict[str, Any]:
@@ -109,6 +115,15 @@ def collect_wikipedia(delay_s: float = 0.35) -> list[Path]:
 
             if page is None:
                 logger.warning('Missing or empty Wikipedia page: %s', source['wiki_title'])
+                skipped.append(source['wiki_title'])
+                time.sleep(delay_s)
+                continue
+
+            if is_disambiguation(page):
+                logger.warning(
+                    'Skip disambiguation page %s; point the catalog at the specific article',
+                    page.get('title'),
+                )
                 skipped.append(source['wiki_title'])
                 time.sleep(delay_s)
                 continue

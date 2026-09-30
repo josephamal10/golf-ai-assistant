@@ -157,13 +157,14 @@ WIKIPEDIA_SOURCES: list[WikiSource] = [
     {'title': 'Shamble (golf)', 'category': 'glossary', 'wiki_title': 'Shamble (golf)'},
     {'title': 'Scramble (golf)', 'category': 'glossary', 'wiki_title': 'Scramble (golf)'},
     {'title': 'Best ball', 'category': 'glossary', 'wiki_title': 'Best ball'},
-    {'title': 'Fourball', 'category': 'glossary', 'wiki_title': 'Fourball'},
+    {'title': 'Fourball', 'category': 'glossary', 'wiki_title': 'Four-ball golf'},
     {'title': 'Foursome (golf)', 'category': 'glossary', 'wiki_title': 'Foursome (golf)'},
     {'title': 'Links (golf)', 'category': 'glossary', 'wiki_title': 'Links (golf)'},
     {'title': 'Rough (golf)', 'category': 'glossary', 'wiki_title': 'Rough (golf)'},
     {'title': 'Bunker (golf)', 'category': 'glossary', 'wiki_title': 'Bunker (golf)'},
     {'title': 'Green (golf)', 'category': 'glossary', 'wiki_title': 'Green (golf)'},
-    {'title': 'Fairway', 'category': 'glossary', 'wiki_title': 'Fairway'},
+    # 'Fairway' alone is a disambiguation page; this redirects to Golf course § Fairway.
+    {'title': 'Fairway', 'category': 'glossary', 'wiki_title': 'Fairway (golf)'},
     # equipment
     {'title': 'Golf club', 'category': 'equipment', 'wiki_title': 'Golf club'},
     {'title': 'Golf ball', 'category': 'equipment', 'wiki_title': 'Golf ball'},

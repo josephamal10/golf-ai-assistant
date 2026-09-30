@@ -190,7 +190,7 @@ with st.sidebar:
     st.divider()
     st.markdown('**Scope**')
     st.caption(
-        'Answers come only from a static knowledge base of 1,804 Wikipedia passages. '
+        'Answers come only from a static knowledge base of curated Wikipedia articles. '
         'Live scores, current rankings, and predictions are out of scope in Phase 1.'
     )
     st.caption('Source text from Wikipedia, CC BY-SA 4.0.')

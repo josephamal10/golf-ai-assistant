@@ -82,6 +82,11 @@ class VectorStore:
                 len(vectors),
             )
 
+    def delete(self, ids: list[str], namespace: str = 'static') -> None:
+        if ids:
+            self._index.delete(ids=ids, namespace=namespace)
+            logger.info('Deleted %s vectors', len(ids))
+
     def stats(self) -> dict[str, Any]:
         result = self._index.describe_index_stats()
         namespaces = getattr(result, 'namespaces', None) or {}

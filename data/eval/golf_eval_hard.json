@@ -1,0 +1,177 @@
+[
+  {
+    "id": "h001",
+    "category": "paraphrase",
+    "question": "What is the term for completing a hole three strokes under par?",
+    "expected_sources": ["Par (score)", "Glossary of golf"],
+    "expected_contains": [["albatross", "double eagle"]]
+  },
+  {
+    "id": "h002",
+    "category": "paraphrase",
+    "question": "What do golfers shout to warn people that a ball might hit them?",
+    "expected_sources": ["Fore (golf)", "Glossary of golf"],
+    "expected_contains": ["fore"]
+  },
+  {
+    "id": "h003",
+    "category": "paraphrase",
+    "question": "Which tournament's champion is awarded a green jacket?",
+    "expected_sources": ["Masters Tournament", "Augusta National Golf Club"],
+    "expected_contains": ["Masters"]
+  },
+  {
+    "id": "h004",
+    "category": "paraphrase",
+    "question": "What is the name for the well-kept stretch of short grass between the tee and the green?",
+    "expected_sources": ["Glossary of golf", "Golf course"],
+    "expected_contains": ["fairway"]
+  },
+  {
+    "id": "h005",
+    "category": "paraphrase",
+    "question": "In which team format do two partners take turns hitting the same ball?",
+    "expected_sources": ["Foursomes", "Glossary of golf"],
+    "expected_contains": [["foursome", "alternate shot", "alternate-shot"]]
+  },
+  {
+    "id": "h006",
+    "category": "paraphrase",
+    "question": "What is a sand-filled depression on a golf course called?",
+    "expected_sources": ["Golf bunkers and penalty areas", "Glossary of golf", "Golf course"],
+    "expected_contains": [["bunker", "sand trap"]]
+  },
+  {
+    "id": "h007",
+    "category": "paraphrase",
+    "question": "What do you call a golfer whose handicap is zero?",
+    "expected_sources": ["Glossary of golf", "Handicap (golf)"],
+    "expected_contains": ["scratch"]
+  },
+  {
+    "id": "h008",
+    "category": "paraphrase",
+    "question": "Which competition pits a team of European women professionals against a team from the United States?",
+    "expected_sources": ["Solheim Cup"],
+    "expected_contains": ["Solheim"]
+  },
+  {
+    "id": "h009",
+    "category": "paraphrase",
+    "question": "What was the old type of golf ball made of leather stuffed with feathers called?",
+    "expected_sources": ["Golf ball", "Golf equipment"],
+    "expected_contains": [["featherie", "feathery"]]
+  },
+  {
+    "id": "h010",
+    "category": "paraphrase",
+    "question": "Which course is considered the oldest golf course in the world?",
+    "expected_sources": ["Old Course at St Andrews", "St Andrews Links", "The Open Championship", "Golf"],
+    "expected_contains": ["St Andrews"]
+  },
+  {
+    "id": "h011",
+    "category": "specific_fact",
+    "question": "In what year was the first Open Championship held, and at which club?",
+    "expected_sources": ["The Open Championship"],
+    "expected_contains": ["1860", "Prestwick"]
+  },
+  {
+    "id": "h012",
+    "category": "specific_fact",
+    "question": "What is the maximum number of clubs a golfer may carry during a round?",
+    "expected_sources": ["Golf club", "Golf", "Masters Tournament", "Sam Snead"],
+    "expected_contains": [["14", "fourteen"]]
+  },
+  {
+    "id": "h013",
+    "category": "specific_fact",
+    "question": "Where and when was the first official Ryder Cup played?",
+    "expected_sources": ["Ryder Cup"],
+    "expected_contains": ["1927", "Worcester"]
+  },
+  {
+    "id": "h014",
+    "category": "specific_fact",
+    "question": "Who won the first Masters Tournament?",
+    "expected_sources": ["Masters Tournament"],
+    "expected_contains": ["Horton Smith"]
+  },
+  {
+    "id": "h015",
+    "category": "specific_fact",
+    "question": "Who designed the course at Augusta National Golf Club?",
+    "expected_sources": ["Augusta National Golf Club", "Masters Tournament"],
+    "expected_contains": ["MacKenzie", "Jones"]
+  },
+  {
+    "id": "h016",
+    "category": "specific_fact",
+    "question": "In which year did golf return to the Summer Olympics?",
+    "expected_sources": ["Golf at the Summer Olympics"],
+    "expected_contains": ["2016"]
+  },
+  {
+    "id": "h017",
+    "category": "specific_fact",
+    "question": "Why does a standard round of golf have 18 holes?",
+    "expected_sources": ["Golf", "The Open Championship", "Golf in Scotland", "History of golf", "Old Course at St Andrews"],
+    "expected_contains": ["St Andrews", "1764"]
+  },
+  {
+    "id": "h018",
+    "category": "specific_fact",
+    "question": "What is Jack Nicklaus's nickname?",
+    "expected_sources": ["Jack Nicklaus"],
+    "expected_contains": ["Golden Bear"]
+  },
+  {
+    "id": "h019",
+    "category": "specific_fact",
+    "question": "Which singer and actress co-founded the tournament now known as the Chevron Championship?",
+    "expected_sources": ["Chevron Championship"],
+    "expected_contains": ["Dinah Shore"]
+  },
+  {
+    "id": "h020",
+    "category": "specific_fact",
+    "question": "Since which year has the Masters champion been given a green jacket?",
+    "expected_sources": ["Masters Tournament", "Augusta National Golf Club"],
+    "expected_contains": ["1949"]
+  },
+  {
+    "id": "h021",
+    "category": "out_of_scope",
+    "question": "Who will win next year's Masters?",
+    "expected_sources": [],
+    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide", "cannot predict", "can't predict"]]
+  },
+  {
+    "id": "h022",
+    "category": "out_of_scope",
+    "question": "Who is the men's world number one golfer this week?",
+    "expected_sources": [],
+    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide", "current rankings"]]
+  },
+  {
+    "id": "h023",
+    "category": "out_of_scope",
+    "question": "Should I bet on Rory McIlroy to win the next Open Championship?",
+    "expected_sources": [],
+    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide", "betting advice"]]
+  },
+  {
+    "id": "h024",
+    "category": "out_of_scope",
+    "question": "What were the final scores at yesterday's PGA Tour event?",
+    "expected_sources": [],
+    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide"]]
+  },
+  {
+    "id": "h025",
+    "category": "out_of_scope",
+    "question": "What is the capital of Australia?",
+    "expected_sources": [],
+    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "static knowledge base", "cannot provide", "can't provide", "only answer"]]
+  }
+]

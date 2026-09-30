@@ -53,11 +53,19 @@ def summarize(results: list[dict]) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument('--eval-file', type=Path, default=EVAL_PATH)
     parser.add_argument('--limit', type=int, default=0, help='0 = all questions')
-    parser.add_argument('--out', type=Path, default=OUT_PATH)
+    parser.add_argument(
+        '--out', type=Path, default=None,
+        help='default: data/eval/last_retrieval_run.json, or last_retrieval_run.<eval file>.json',
+    )
     args = parser.parse_args()
+    out = args.out or (
+        OUT_PATH if args.eval_file.resolve() == EVAL_PATH
+        else OUT_PATH.with_name(f'last_retrieval_run.{args.eval_file.stem}.json')
+    )
 
-    items = json.loads(EVAL_PATH.read_text(encoding='utf-8'))
+    items = json.loads(args.eval_file.read_text(encoding='utf-8'))
     if args.limit:
         items = items[: args.limit]
 
@@ -67,13 +75,19 @@ def main() -> None:
         expected = item.get('expected_sources') or []
         matches = retriever.retrieve(item['question'])
         titles = [str(m['metadata'].get('title', '')) for m in matches]
-        rank = first_hit_rank(titles, expected)
         context = format_context(matches)
-        facts_found, missing = keyword_verdict(context, item.get('expected_contains', []))
+        # Out-of-scope items have no right article; their answer check is a refusal, which
+        # the context can't contain. Record what was retrieved but leave them unscored.
+        scored = bool(expected)
+        rank = first_hit_rank(titles, expected) if scored else None
+        facts_found, missing = (
+            keyword_verdict(context, item.get('expected_contains', [])) if scored else (False, [])
+        )
         results.append({
             'id': item['id'],
             'category': item['category'],
             'question': item['question'],
+            'scored': scored,
             'expected_sources': expected,
             'retrieved': [
                 {
@@ -89,14 +103,22 @@ def main() -> None:
             'missing_keywords': missing,
             'context_words': len(context.split()),
         })
-        print(
-            f"{item['id']} {'HIT ' if rank else 'MISS'} rank={rank or '-'} "
-            f"facts={'yes' if facts_found else 'NO '} {item['question'][:55]}",
-            flush=True,
-        )
+        if scored:
+            print(
+                f"{item['id']} {'HIT ' if rank else 'MISS'} rank={rank or '-'} "
+                f"facts={'yes' if facts_found else 'NO '} {item['question'][:55]}",
+                flush=True,
+            )
+        else:
+            top = f'{matches[0]["score"]:.2f}' if matches else '-'
+            print(
+                f"{item['id']} n/a  retrieved={len(matches)} top_score={top} {item['question'][:48]}",
+                flush=True,
+            )
 
+    scored_results = [r for r in results if r['scored']]
     by_category: dict[str, list[dict]] = defaultdict(list)
-    for result in results:
+    for result in scored_results:
         by_category[result['category']].append(result)
 
     report = {
@@ -105,11 +127,13 @@ def main() -> None:
         'embed_model': settings.jina_embed_model,
         'top_k': settings.retrieve_top_k,
         'min_score': settings.retrieve_min_score,
-        **summarize(results),
+        'eval_file': str(args.eval_file),
+        **summarize(scored_results),
+        'n_unscored': len(results) - len(scored_results),
         'by_category': {cat: summarize(rs) for cat, rs in sorted(by_category.items())},
         'results': results,
     }
-    args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+    out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
 
     print(f"\nfacts_in_context={report['facts_in_context_rate']:.0%}  "
           f"hit@{settings.retrieve_top_k}={report['hit_rate']:.0%}  "
@@ -117,7 +141,9 @@ def main() -> None:
     for cat, stats in report['by_category'].items():
         print(f"  {cat:17} facts={stats['facts_in_context_rate']:.0%}  "
               f"hit={stats['hit_rate']:.0%}  top1={stats['top1_rate']:.0%}  n={stats['n']}")
-    print(f'Wrote {args.out}')
+    if report['n_unscored']:
+        print(f"  ({report['n_unscored']} out-of-scope questions not scored; see 'retrieved' in the report)")
+    print(f'Wrote {out}')
 
 
 if __name__ == '__main__':
