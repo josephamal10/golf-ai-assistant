@@ -83,6 +83,12 @@ The UI shows the active provider and model, disables the composer while the API 
 unreachable, and lists the source articles behind every answer, numbered to match the
 `[n]` citations. Point it at another API with `GOLF_API_URL`.
 
+Follow-up questions work: the UI sends the recent conversation as `history`, and when
+there is history the API first asks the LLM to rewrite the question to stand alone
+("How many majors did he win?" → "How many majors did Jack Nicklaus win?"), then searches
+and answers with that. The response's `search_query` shows the rewrite and the UI displays
+it. A follow-up therefore costs two LLM calls instead of one.
+
 If the embedding or LLM provider is rate limited or out of quota, `/ask` returns
 HTTP 429 with a message instead of a generic 500. Provider outages return HTTP 503 with
 the provider's reason; the UI shows both as distinct, actionable messages.
@@ -115,7 +121,12 @@ python scripts/evaluate.py
 ```
 
 It waits 28 seconds between questions to respect free-tier limits, stops early at the
-first HTTP 429, and writes `data/eval/last_run.json`. Use `--limit N` to run fewer.
+first HTTP 429, and writes `data/eval/last_run.json`. Use `--limit N` to run fewer and
+`--start N` to resume after the first N (a resumed run writes its own `.startN` file).
+
+Follow-ups: `data/eval/golf_eval_followups.json` (6 items) gives each question the earlier
+conversation it depends on. The end-to-end eval sends that history; the retrieval eval
+searches the raw follow-up, which shows how badly it does without the rewrite.
 
 ## Tests
 

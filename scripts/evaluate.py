@@ -40,15 +40,22 @@ def main() -> None:
     parser.add_argument('--base-url', default='http://127.0.0.1:8001')
     parser.add_argument('--eval-file', type=Path, default=EVAL_PATH)
     parser.add_argument('--limit', type=int, default=0, help='0 = all questions')
+    parser.add_argument(
+        '--start', type=int, default=0,
+        help='skip the first N questions, e.g. to resume a run the quota cut short',
+    )
     args = parser.parse_args()
     out_path = (
         OUT_PATH if args.eval_file.resolve() == EVAL_PATH
         else OUT_PATH.with_name(f'last_run.{args.eval_file.stem}.json')
     )
 
-    items = json.loads(args.eval_file.read_text(encoding='utf-8'))
+    items = json.loads(args.eval_file.read_text(encoding='utf-8'))[args.start:]
     if args.limit:
         items = items[: args.limit]
+    if args.start:
+        # A resumed run gets its own file so the earlier part's results are kept.
+        out_path = out_path.with_name(f'{out_path.stem}.start{args.start}.json')
 
     results = []
     rate_limited = False
@@ -58,7 +65,8 @@ def main() -> None:
         for index, item in enumerate(items):
             response = client.post(
                 f'{args.base_url}/ask',
-                json={'question': item['question']},
+                # Follow-up items carry the earlier conversation the question depends on.
+                json={'question': item['question'], 'history': item.get('history', [])},
             )
             payload = response.json()
             answer = payload.get('answer') or ''
@@ -73,6 +81,7 @@ def main() -> None:
                 'id': item['id'],
                 'category': item['category'],
                 'question': item['question'],
+                'search_query': payload.get('search_query'),
                 'expected_contains': item.get('expected_contains', []),
                 'status_code': response.status_code,
                 'answer': payload.get('answer'),

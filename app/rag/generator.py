@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 import logging
+import re
 
 import anthropic
 import httpx
@@ -42,6 +43,21 @@ Style:
 
 Never produce your own tournament predictions or betting advice.
 """
+
+REWRITE_PROMPT = """You rewrite follow-up messages for a golf knowledge base search.
+
+Given a conversation and the user's latest message, rewrite the latest message as one
+standalone question that can be understood without the conversation. Replace pronouns
+and references ("he", "that tournament", "it") with the names they refer to. Keep the
+user's meaning: do not answer it and do not add facts. If the message is already
+standalone, return it unchanged.
+
+Reply with the question only.
+"""
+HISTORY_TURNS = 6                                          # last three exchanges
+HISTORY_TURN_CHARS = 1500                                  # long answers add little context
+CITATION_MARK_RE = re.compile(r'\[\d+\]')
+REWRITE_LABEL_RE = re.compile(r'^(standalone question|rewritten question|question)\s*:\s*', re.I)
 
 GEMINI_URL = (
     'https://generativelanguage.googleapis.com/v1beta/models/'
@@ -122,11 +138,31 @@ def user_prompt(question: str, matches: list[dict[str, Any]]) -> str:
     return f'Question:\n{question}\n\nRetrieved context:\n{format_context(matches)}'
 
 
+def rewrite_prompt(question: str, history: list[dict[str, str]]) -> str:
+    """Recent turns with citation markers stripped: [n] means nothing outside its answer."""
+    lines = []
+    for turn in history[-HISTORY_TURNS:]:
+        speaker = 'User' if turn['role'] == 'user' else 'Assistant'
+        text = CITATION_MARK_RE.sub('', turn['content'])[:HISTORY_TURN_CHARS].strip()
+        lines.append(f'{speaker}: {text}')
+    return 'Conversation:\n' + '\n'.join(lines) + f'\n\nLatest message: {question}'
+
+
+def clean_rewrite(text: str, question: str) -> str:
+    """First non-empty line without labels or quotes; the original if nothing usable came back."""
+    line = next((part.strip() for part in text.splitlines() if part.strip()), '')
+    line = REWRITE_LABEL_RE.sub('', line).strip().strip('"\'').strip()
+    return line if 3 <= len(line) <= 2000 else question
+
+
 class Generator(Protocol):
     provider: str
     model: str
 
     def generate(self, question: str, matches: list[dict[str, Any]]) -> str:
+        ...
+
+    def rewrite_question(self, question: str, history: list[dict[str, str]]) -> str:
         ...
 
 
@@ -147,18 +183,19 @@ class GroundedGenerator:
     def generate(self, question: str, matches: list[dict[str, Any]]) -> str:
         if not matches:
             return empty_answer()
+        return self._create(SYSTEM_PROMPT, user_prompt(question, matches), max_tokens=1200)
 
+    def rewrite_question(self, question: str, history: list[dict[str, str]]) -> str:
+        text = self._create(REWRITE_PROMPT, rewrite_prompt(question, history), max_tokens=200)
+        return clean_rewrite(text, question)
+
+    def _create(self, system: str, content: str, max_tokens: int) -> str:
         try:
             message = self._client.messages.create(
                 model=self.model,
-                max_tokens=1200,
-                system=SYSTEM_PROMPT,
-                messages=[
-                    {
-                        'role': 'user',
-                        'content': user_prompt(question, matches),
-                    }
-                ],
+                max_tokens=max_tokens,
+                system=system,
+                messages=[{'role': 'user', 'content': content}],
             )
         except anthropic.RateLimitError as exc:
             raise RateLimitedError('Claude rate limit exceeded. Try again later.') from exc
@@ -229,6 +266,27 @@ class GeminiGroundedGenerator:
         if not text:
             raise RuntimeError(f'Gemini returned an empty answer (finishReason={finish})')
         return text
+
+    def rewrite_question(self, question: str, history: list[dict[str, str]]) -> str:
+        payload = {
+            'system_instruction': {'parts': [{'text': REWRITE_PROMPT}]},
+            'contents': [
+                {'role': 'user', 'parts': [{'text': rewrite_prompt(question, history)}]}
+            ],
+            'generationConfig': {
+                'maxOutputTokens': 1024,
+                'temperature': 0.0,
+                'thinkingConfig': {'thinkingLevel': 'minimal'},
+            },
+        }
+        data = self._post_or_unavailable(GEMINI_URL.format(model=self.model), payload)
+        try:
+            text, _ = _gemini_visible_text(data)
+        except RuntimeError:
+            # No candidates (e.g. a safety block): searching the raw message beats failing.
+            logger.warning('Gemini rewrite returned no candidates; using the original question')
+            return question
+        return clean_rewrite(text, question)
 
     def _post_or_unavailable(self, url: str, payload: dict) -> dict:
         try:

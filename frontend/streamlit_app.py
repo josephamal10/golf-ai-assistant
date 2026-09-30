@@ -10,6 +10,7 @@ import streamlit as st
 API_URL = os.environ.get('GOLF_API_URL', 'http://127.0.0.1:8001')
 ASK_TIMEOUT_SECONDS = 150.0                                # grounded answers can take ~50s
 HEALTH_TTL_SECONDS = 30                                    # keeps reruns off the health endpoint
+HISTORY_TURNS = 6                                          # the API only uses the last three exchanges
 
 # One per category, all questions the retrieval eval covers.
 EXAMPLE_QUESTIONS = [
@@ -68,11 +69,22 @@ def render_sources(sources: list[dict]) -> None:
                     st.badge(source['category'], color='green')
 
 
+def chat_history(messages: list[dict]) -> list[dict]:
+    """Earlier turns sent with a question so the API can resolve follow-ups like "he"."""
+    return [
+        {'role': m['role'], 'content': m['content']}
+        for m in messages
+        if m.get('content') and not m.get('error')             # failed turns carry nothing useful
+    ][-HISTORY_TURNS:]
+
+
 def render_assistant(message: dict) -> None:
     """Shared by the live turn and the replayed history so both look identical."""
     if message.get('error'):
         st.error(message['content'])
         return
+    if message.get('search_query'):
+        st.caption(f"🔎 Searched for: {message['search_query']}")
     st.markdown(message['content'])
     footnote = [
         part
@@ -120,6 +132,7 @@ typed = st.chat_input(
 question = typed or st.session_state.pop('pending_question', None)
 
 if question:
+    history = chat_history(st.session_state.messages)
     st.session_state.messages.append({'role': 'user', 'content': question})
     with st.chat_message('user'):
         st.markdown(question)
@@ -131,13 +144,15 @@ if question:
                 started = time.perf_counter()
                 response = httpx.post(
                     f'{API_URL}/ask',
-                    json={'question': question},
+                    json={'question': question, 'history': history},
                     timeout=ASK_TIMEOUT_SECONDS,
                 )
                 response.raise_for_status()
                 data = response.json()
                 elapsed = time.perf_counter() - started
+            search_query = data.get('search_query') or ''
             message.update(
+                search_query=search_query if search_query != question else '',
                 content=data.get('answer') or 'No answer returned.',
                 sources=data.get('sources') or [],
                 provider=data.get('provider', ''),

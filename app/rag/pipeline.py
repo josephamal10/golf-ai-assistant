@@ -16,15 +16,19 @@ class StaticRagPipeline:
         self.retriever = retriever or Retriever()
         self.generator = generator or build_generator()
 
-    def ask(self, question: str) -> AskResponse:
-        matches = self.retriever.retrieve(question)
-        answer = self.generator.generate(question, matches)
+    def ask(self, question: str, history: list[dict[str, str]] | None = None) -> AskResponse:
+        # Follow-ups like "how many majors did he win?" can't be searched as-is, so with
+        # history the question is first rewritten to stand alone. One extra LLM call.
+        search_query = self.generator.rewrite_question(question, history) if history else question
+        matches = self.retriever.retrieve(search_query)
+        answer = self.generator.generate(search_query, matches)
         sources = _dedupe_sources(matches)
         insufficient = len(matches) == 0
         return AskResponse(
             answer=answer,
             sources=sources,
             route='static',
+            search_query=search_query,
             retrieved_chunk_ids=[m['id'] for m in matches],
             insufficient_context=insufficient,
             provider=getattr(self.generator, 'provider', ''),

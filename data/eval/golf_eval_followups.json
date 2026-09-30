@@ -1,0 +1,68 @@
+[
+  {
+    "id": "f001",
+    "category": "follow_up",
+    "history": [
+      {"role": "user", "content": "Who is Jack Nicklaus?"},
+      {"role": "assistant", "content": "Jack Nicklaus is a retired American professional golfer nicknamed the Golden Bear."}
+    ],
+    "question": "How many major championships did he win?",
+    "expected_sources": ["Jack Nicklaus"],
+    "expected_contains": ["18"]
+  },
+  {
+    "id": "f002",
+    "category": "follow_up",
+    "history": [
+      {"role": "user", "content": "What is the Masters Tournament?"},
+      {"role": "assistant", "content": "The Masters is one of the four men's major championships and is played at Augusta National Golf Club."}
+    ],
+    "question": "In which month is it usually played?",
+    "expected_sources": ["Masters Tournament"],
+    "expected_contains": ["April"]
+  },
+  {
+    "id": "f003",
+    "category": "follow_up",
+    "history": [
+      {"role": "user", "content": "What is the Ryder Cup?"},
+      {"role": "assistant", "content": "The Ryder Cup is a biennial men's team competition between Europe and the United States."}
+    ],
+    "question": "Where was the first official one played?",
+    "expected_sources": ["Ryder Cup"],
+    "expected_contains": ["Worcester"]
+  },
+  {
+    "id": "f004",
+    "category": "follow_up",
+    "history": [
+      {"role": "user", "content": "Who is Annika Sörenstam?"},
+      {"role": "assistant", "content": "Annika Sörenstam is a Swedish professional golfer and one of the most successful players in LPGA history."}
+    ],
+    "question": "What low score is she the only woman to have shot in competition?",
+    "expected_sources": ["Annika Sörenstam"],
+    "expected_contains": ["59"]
+  },
+  {
+    "id": "f005",
+    "category": "follow_up",
+    "history": [
+      {"role": "user", "content": "What is a links golf course?"},
+      {"role": "assistant", "content": "A links is the oldest style of golf course, usually built on sandy coastal land."}
+    ],
+    "question": "Which country were they first developed in?",
+    "expected_sources": ["Links (golf)"],
+    "expected_contains": ["Scotland"]
+  },
+  {
+    "id": "f006",
+    "category": "topic_change",
+    "history": [
+      {"role": "user", "content": "Who is Jack Nicklaus?"},
+      {"role": "assistant", "content": "Jack Nicklaus is a retired American professional golfer nicknamed the Golden Bear."}
+    ],
+    "question": "What is a birdie?",
+    "expected_sources": ["Par (score)", "Glossary of golf"],
+    "expected_contains": [["under par", "fewer than par", "below par"]]
+  }
+]

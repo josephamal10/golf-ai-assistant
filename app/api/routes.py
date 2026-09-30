@@ -24,7 +24,8 @@ def ask(payload: AskRequest) -> AskResponse:
     if not question:
         raise HTTPException(status_code=400, detail='Question cannot be empty.')
     try:
-        return get_pipeline().ask(question)
+        history = [turn.model_dump() for turn in payload.history]
+        return get_pipeline().ask(question, history=history)
     except RateLimitedError as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
     except UpstreamUnavailableError as exc:

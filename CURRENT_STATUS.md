@@ -46,8 +46,16 @@ Phase 1 — Static RAG pipeline (in progress)
   off-topic intent is the Phase 2 router's job
 - End-to-end eval (2026-08-31): 19 of the 20 answered questions passed; the other 30
   failed once the Gemini quota ran out
-- Unit tests: 16 passing (chunker, citations, schemas, generator errors, API error mapping,
-  disambiguation detection)
+- End-to-end eval on the hard set (2026-09-30): 15/15 answered questions passed (all 10
+  paraphrased, h011–h015 specific facts); the quota ran out at h016 and the run stopped
+  cleanly. h016–h025, including all 5 out-of-scope refusals, are still untested
+- Follow-up questions (2026-09-30): `/ask` accepts `history`; with history the LLM first
+  rewrites the question to stand alone (`search_query` in the response, shown in the UI).
+  6-item follow-up set `data/eval/golf_eval_followups.json`. Searching the raw follow-ups
+  without the rewrite: right article first for only 2/6 (hit 4/6); the with-rewrite
+  number needs an end-to-end run
+- Unit tests: 25 passing (chunker, citations, schemas, generator errors, API error mapping,
+  disambiguation detection, follow-up rewriting)
 
 ## Pending (end of 2026-09-30 session)
 
@@ -58,15 +66,18 @@ Phase 1 — Static RAG pipeline (in progress)
 
 ## Next
 
-1. End-to-end eval within the Gemini quota. Most informative: the hard set
-   (`python scripts/evaluate.py --eval-file data/eval/golf_eval_hard.json`), which checks
-   refusals on the 5 out-of-scope questions; or the original `--limit 20`
+1. Finish the end-to-end evals within the daily Gemini quota (~15–20 calls; each follow-up
+   uses 2), e.g. one per day:
+   - `python scripts/evaluate.py --eval-file data/eval/golf_eval_hard.json --start 15`
+     (10 calls; includes the 5 out-of-scope refusals)
+   - `python scripts/evaluate.py --eval-file data/eval/golf_eval_followups.json` (12 calls)
 2. ~~Harder eval questions~~ done 2026-09-30
-3. Follow-up questions: send chat history and rewrite follow-ups into standalone questions
+3. ~~Follow-up questions~~ built 2026-09-30; verify with the follow-up eval above
 4. Hybrid (keyword + vector) search and/or reranking
 5. Optional: licensed Rules of Golf PDF in `data/raw/pdfs/`
 
 ## Blockers
 
-- Gemini free-tier quota limits end-to-end eval runs (the 2026-08-31 run was cut off after 20 questions)
+- Gemini free-tier quota limits end-to-end eval runs (cut off after 20 questions on
+  2026-08-31 and after 15 on 2026-09-30)
 - No official Rules PDF yet (Wikipedia only)

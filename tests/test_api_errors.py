@@ -17,7 +17,7 @@ class _FailingPipeline:
     def __init__(self, exc: Exception) -> None:
         self._exc = exc
 
-    def ask(self, question: str) -> None:
+    def ask(self, question: str, history: list[dict] | None = None) -> None:
         raise self._exc
 
 
