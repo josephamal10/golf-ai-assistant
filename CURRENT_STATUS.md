@@ -17,6 +17,11 @@ Phase 1 — Static RAG pipeline (in progress)
 - Grounded generation with Gemini (default) or Claude, “answer only from context + citations”
 - Citation numbers in answers match the returned sources list (context grouped by article)
 - Rate limits / quota errors return HTTP 429 with a clear message
+- Gemini/Claude server and connection errors (e.g. 503 "high demand") get up to 4 attempts
+  (Gemini via tenacity, Claude via the SDK's `max_retries`), then return HTTP 503 with the
+  provider's reason. Retries are capped at 45s so they stay inside the UI's 150s wait
+- Only provider-authored messages reach the client; other errors return a generic 500
+  and are logged, so raw payloads and config hints are not exposed
 - FastAPI `GET /health` and `POST /ask`
 - Streamlit chat UI
 - 50-question eval set with expected answer keywords and expected source articles
@@ -27,7 +32,14 @@ Phase 1 — Static RAG pipeline (in progress)
   article at ranks 2–3 and the facts in context.
 - End-to-end eval (2026-08-31): 19 of the 20 answered questions passed; the other 30
   failed once the Gemini quota ran out
-- Unit tests: 9 passing (chunker, citations, schemas)
+- Unit tests: 14 passing (chunker, citations, schemas, generator errors, API error mapping)
+
+## Pending (end of 2026-09-30 session)
+
+- Work is on branch `phase1-rag-improvements`; not merged into `master` yet
+- First commit (`c670f39`) is still authored by the placeholder `AMAL <amal@local>`;
+  optionally rewrite it to Joseph Amal before publishing anywhere
+- Before publishing as a portfolio project: get written OK from Nanonino
 
 ## Next
 

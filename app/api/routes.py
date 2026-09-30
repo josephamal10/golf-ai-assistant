@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 import logging
 
 from app.models.schemas import AskRequest, AskResponse
-from app.rag.errors import RateLimitedError
+from app.rag.errors import RateLimitedError, UpstreamUnavailableError
 from app.rag.pipeline import StaticRagPipeline
 
 
@@ -27,7 +27,8 @@ def ask(payload: AskRequest) -> AskResponse:
         return get_pipeline().ask(question)
     except RateLimitedError as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
-    except RuntimeError as exc:
+    except UpstreamUnavailableError as exc:
+        # Provider-authored reason, safe to show; other RuntimeErrors carry internals.
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception('Ask failed')

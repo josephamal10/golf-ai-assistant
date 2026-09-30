@@ -5,10 +5,16 @@ import logging
 
 import anthropic
 import httpx
-from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    stop_after_delay,
+    wait_exponential,
+)
 
 from app.config import settings
-from app.rag.errors import RateLimitedError
+from app.rag.errors import RateLimitedError, UpstreamUnavailableError
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +47,8 @@ GEMINI_URL = (
     'https://generativelanguage.googleapis.com/v1beta/models/'
     '{model}:generateContent'
 )
+GENERATION_ATTEMPTS = 4                                    # attempts per call, both providers
+GENERATION_RETRY_BUDGET_SECONDS = 45                       # keeps retries inside the UI's wait
 
 
 def _should_retry_gemini(exc: BaseException) -> bool:
@@ -130,7 +138,10 @@ class GroundedGenerator:
     def __init__(self) -> None:
         if not settings.anthropic_api_key:
             raise RuntimeError('ANTHROPIC_API_KEY is missing. Add it to .env')
-        self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self._client = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key,
+            max_retries=GENERATION_ATTEMPTS - 1,            # same attempt budget as Gemini
+        )
         self.model = settings.anthropic_generation_model
 
     def generate(self, question: str, matches: list[dict[str, Any]]) -> str:
@@ -151,6 +162,17 @@ class GroundedGenerator:
             )
         except anthropic.RateLimitError as exc:
             raise RateLimitedError('Claude rate limit exceeded. Try again later.') from exc
+        except anthropic.APIStatusError as exc:
+            if exc.status_code < 500:
+                raise
+            raise UpstreamUnavailableError(
+                f'Claude is temporarily unavailable (HTTP {exc.status_code}). Try again in a minute.'
+            ) from exc
+        except anthropic.APIConnectionError as exc:
+            # Covers APITimeoutError; the SDK already retried per max_retries.
+            raise UpstreamUnavailableError(
+                'Claude is unreachable right now. Try again in a minute.'
+            ) from exc
         parts = []
         for block in message.content:
             if getattr(block, 'type', None) == 'text':
@@ -192,7 +214,7 @@ class GeminiGroundedGenerator:
                 },
             },
         }
-        data = self._post(url, payload)
+        data = self._post_or_unavailable(url, payload)
         text, finish = _gemini_visible_text(data)
         if finish == 'MAX_TOKENS':
             logger.warning(
@@ -200,7 +222,7 @@ class GeminiGroundedGenerator:
                 data.get('usageMetadata'),
             )
             payload['generationConfig']['maxOutputTokens'] = 16384
-            data = self._post(url, payload)
+            data = self._post_or_unavailable(url, payload)
             text, finish = _gemini_visible_text(data)
         if finish and finish not in {'STOP', 'END_TURN'}:
             logger.warning('Gemini finishReason=%s usage=%s', finish, data.get('usageMetadata'))
@@ -208,8 +230,23 @@ class GeminiGroundedGenerator:
             raise RuntimeError(f'Gemini returned an empty answer (finishReason={finish})')
         return text
 
+    def _post_or_unavailable(self, url: str, payload: dict) -> dict:
+        try:
+            return self._post(url, payload)
+        except httpx.HTTPStatusError as exc:
+            # 5xx is retried inside _post; this is only reached once retries run out.
+            if exc.response.status_code < 500:
+                raise
+            try:
+                reason = exc.response.json()['error']['message']
+            except (ValueError, KeyError, TypeError):
+                reason = f'HTTP {exc.response.status_code}'
+            raise UpstreamUnavailableError(
+                f'Gemini is temporarily unavailable: {reason} Try again in a minute.'
+            ) from exc
+
     @retry(
-        stop=stop_after_attempt(2),
+        stop=stop_after_attempt(GENERATION_ATTEMPTS) | stop_after_delay(GENERATION_RETRY_BUDGET_SECONDS),
         wait=wait_exponential(multiplier=1, min=2, max=8),
         retry=retry_if_exception(_should_retry_gemini),
         reraise=True,
