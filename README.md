@@ -78,8 +78,14 @@ streamlit run frontend/streamlit_app.py
 - Health: `GET http://127.0.0.1:8001/health`
 - Ask: `POST http://127.0.0.1:8001/ask` with `{"question": "What is a bogey?"}`
 
+Run Streamlit from the repo root so it picks up the theme in `.streamlit/config.toml`.
+The UI shows the active provider and model, disables the composer while the API is
+unreachable, and lists the source articles behind every answer, numbered to match the
+`[n]` citations. Point it at another API with `GOLF_API_URL`.
+
 If the embedding or LLM provider is rate limited or out of quota, `/ask` returns
-HTTP 429 with a message instead of a generic 500.
+HTTP 429 with a message instead of a generic 500. Provider outages return HTTP 503 with
+the provider's reason; the UI shows both as distinct, actionable messages.
 
 ## Eval
 

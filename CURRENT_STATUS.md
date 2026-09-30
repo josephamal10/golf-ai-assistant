@@ -23,7 +23,8 @@ Phase 1 — Static RAG pipeline (in progress)
 - Only provider-authored messages reach the client; other errors return a generic 500
   and are logged, so raw payloads and config hints are not exposed
 - FastAPI `GET /health` and `POST /ask`
-- Streamlit chat UI
+- Streamlit chat UI: themed, example questions, provider/model + latency per answer,
+  numbered source cards matching the `[n]` citations, distinct 429/503/timeout states
 - 50-question eval set with expected answer keywords and expected source articles
 - Retrieval eval (`scripts/evaluate_retrieval.py`) after the 2026-09-29 re-chunk + rebuild:
   expected article retrieved for 50/50 questions, ranked first for 48/50 (was 50/50),

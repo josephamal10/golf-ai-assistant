@@ -1,0 +1,11 @@
+# Fairway palette: green accents on a near-white base so long answers stay readable.
+[theme]
+base = 'light'
+primaryColor = '#1F7A4D'
+backgroundColor = '#FFFFFF'
+secondaryBackgroundColor = '#F1F6F2'
+textColor = '#16241C'
+font = 'sans serif'
+
+[browser]
+gatherUsageStats = false
