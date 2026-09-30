@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+import httpx
 
 from app.config import settings
 from app.rag.embeddings import EmbeddingClient
+from app.rag.reranker import Reranker
 from app.rag.vectorstore import VectorStore
+
+
+logger = logging.getLogger(__name__)
 
 
 class Retriever:
@@ -12,9 +19,11 @@ class Retriever:
         self,
         embeddings: EmbeddingClient | None = None,
         store: VectorStore | None = None,
+        reranker: Reranker | None = None,
     ) -> None:
         self.embeddings = embeddings or EmbeddingClient()
         self.store = store or VectorStore()
+        self.reranker = reranker or (Reranker() if settings.rerank_enabled else None)
 
     def retrieve(
         self,
@@ -29,7 +38,23 @@ class Retriever:
         metadata_filter = {'category': {'$eq': category}} if category else None
         matches = self.store.query(
             vector=query_vector,
-            top_k=top_k,
+            top_k=max(top_k, settings.rerank_candidates) if self.reranker else top_k,
             filter=metadata_filter,
         )
-        return [m for m in matches if m['score'] >= min_score]
+        matches = [m for m in matches if m['score'] >= min_score]
+        if self.reranker and len(matches) > 1:
+            try:
+                reranked = self.reranker.rerank(question, matches, top_n=top_k)
+            except (httpx.HTTPError, RuntimeError) as exc:
+                # Reranking only improves the order; vector order still answers the question.
+                logger.warning('Rerank failed, using vector order: %s', exc)
+            else:
+                # Gate on the best passage only: multi-part answers need weaker supporting ones.
+                if reranked[0].get('rerank_score', 1.0) < settings.rerank_min_score:
+                    logger.info(
+                        'Best rerank score %.3f < %.2f; no relevant context for %r',
+                        reranked[0]['rerank_score'], settings.rerank_min_score, question,
+                    )
+                    return []
+                return reranked
+        return matches[:top_k]

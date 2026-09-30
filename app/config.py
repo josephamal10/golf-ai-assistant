@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     retrieve_top_k: int = 6
     retrieve_min_score: float = 0.25
 
+    # Rerank: fetch more vector-search candidates, keep the top_k a reranker scores best.
+    rerank_enabled: bool = True
+    jina_rerank_model: str = 'jina-reranker-v3.5'
+    rerank_candidates: int = 20
+    # If even the best passage scores below this, nothing relevant was found: answer
+    # "not enough information" without an LLM call. On 2026-09-30 the lowest top score
+    # among 70 answerable eval questions was 0.34; off-topic ones scored 0.05-0.13.
+    rerank_min_score: float = 0.2
+
     chunk_target_words: int = 300
     chunk_overlap_words: int = 50
 

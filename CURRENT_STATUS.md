@@ -54,8 +54,17 @@ Phase 1 — Static RAG pipeline (in progress)
   6-item follow-up set `data/eval/golf_eval_followups.json`. Searching the raw follow-ups
   without the rewrite: right article first for only 2/6 (hit 4/6); the with-rewrite
   number needs an end-to-end run
-- Unit tests: 25 passing (chunker, citations, schemas, generator errors, API error mapping,
-  disambiguation detection, follow-up rewriting)
+- Reranking (2026-09-30): Pinecone top 20 → `jina-reranker-v3.5` → best 6, falling back to
+  vector order if the reranker fails. Right article ranked first, off → on: original set
+  96% → 100%, hard set 90% → 100% (paraphrased 80% → 100%), raw follow-ups 33% → 50%.
+  Costs about 1.5–3.5 s per question
+- Relevance cutoff: if the best rerank score is below `RERANK_MIN_SCORE` (0.2) the answer
+  is "not enough information" with no LLM call. Lowest best score among 70 answerable eval
+  questions: 0.34; off-topic/unsupported: 0.05 (capital of Australia), 0.13 (yesterday's
+  scores). Golf prediction/ranking questions score 0.36–0.47, so they still need the
+  Phase 2 router
+- Unit tests: 32 passing (chunker, citations, schemas, generator errors, API error mapping,
+  disambiguation detection, follow-up rewriting, reranking)
 
 ## Pending (end of 2026-09-30 session)
 
@@ -66,18 +75,21 @@ Phase 1 — Static RAG pipeline (in progress)
 
 ## Next
 
-1. Finish the end-to-end evals within the daily Gemini quota (~15–20 calls; each follow-up
-   uses 2), e.g. one per day:
+1. Finish the end-to-end evals within the daily Gemini quota (20 calls; each follow-up
+   uses 2), e.g. one per day. Both now run on the reranked pipeline:
    - `python scripts/evaluate.py --eval-file data/eval/golf_eval_hard.json --start 15`
      (10 calls; includes the 5 out-of-scope refusals)
    - `python scripts/evaluate.py --eval-file data/eval/golf_eval_followups.json` (12 calls)
 2. ~~Harder eval questions~~ done 2026-09-30
 3. ~~Follow-up questions~~ built 2026-09-30; verify with the follow-up eval above
-4. Hybrid (keyword + vector) search and/or reranking
+4. ~~Reranking~~ done 2026-09-30. Hybrid keyword + vector search only if a harder eval
+   shows reranking isn't enough
 5. Optional: licensed Rules of Golf PDF in `data/raw/pdfs/`
 
 ## Blockers
 
-- Gemini free-tier quota limits end-to-end eval runs (cut off after 20 questions on
-  2026-08-31 and after 15 on 2026-09-30)
+- Gemini free-tier quota: 20 requests per day **per model**
+  (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, confirmed from the 429 details),
+  so end-to-end evals run in daily slices. A second Gemini model for rewrites would
+  double the budget
 - No official Rules PDF yet (Wikipedia only)

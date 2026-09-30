@@ -12,7 +12,7 @@ predictions that are labeled as opinion, never model-generated forecasts.
 ```
 Question
    → Jina embedding
-   → Pinecone top-k chunks (grouped by source article)
+   → Pinecone top-20 chunks → Jina reranker keeps the best 6 (grouped by source article)
    → Gemini or Claude (grounded generation + citations)
    → FastAPI /ask  →  Streamlit UI
 ```
@@ -23,6 +23,7 @@ Question
 |--------------|-----------------------------------------------------|
 | API          | Python, FastAPI                                     |
 | Embeddings   | Jina AI (`jina-embeddings-v4`, 1024-d)              |
+| Reranking    | Jina AI (`jina-reranker-v3.5`)                      |
 | Vector DB    | Pinecone serverless                                 |
 | Generation   | Google Gemini (default) or Anthropic Claude, via `LLM_PROVIDER` |
 | UI           | Streamlit (temporary)                               |
@@ -82,6 +83,12 @@ Run Streamlit from the repo root so it picks up the theme in `.streamlit/config.
 The UI shows the active provider and model, disables the composer while the API is
 unreachable, and lists the source articles behind every answer, numbered to match the
 `[n]` citations. Point it at another API with `GOLF_API_URL`.
+
+Retrieval reranks: Pinecone returns the top `RERANK_CANDIDATES` (20) passages, Jina's
+reranker (`jina-reranker-v3.5`) reads the question with each one, and the best
+`RETRIEVE_TOP_K` (6) go to the LLM. If even the best passage scores below
+`RERANK_MIN_SCORE` (0.2), the answer is "not enough information" with no LLM call. If the
+reranker is down, the vector order is used. Set `RERANK_ENABLED=false` to turn it off.
 
 Follow-up questions work: the UI sends the recent conversation as `history`, and when
 there is history the API first asks the LLM to rewrite the question to stand alone

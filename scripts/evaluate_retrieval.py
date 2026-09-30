@@ -95,6 +95,7 @@ def main() -> None:
                     'title': title,
                     'section': m['metadata'].get('section', ''),
                     'score': round(m['score'], 4),
+                    **({'rerank_score': round(m['rerank_score'], 4)} if 'rerank_score' in m else {}),
                 }
                 for title, m in zip(titles, matches)
             ],
@@ -127,6 +128,10 @@ def main() -> None:
         'embed_model': settings.jina_embed_model,
         'top_k': settings.retrieve_top_k,
         'min_score': settings.retrieve_min_score,
+        'rerank': (
+            {'model': settings.jina_rerank_model, 'candidates': settings.rerank_candidates}
+            if settings.rerank_enabled else None
+        ),
         'eval_file': str(args.eval_file),
         **summarize(scored_results),
         'n_unscored': len(results) - len(scored_results),
@@ -135,7 +140,8 @@ def main() -> None:
     }
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
 
-    print(f"\nfacts_in_context={report['facts_in_context_rate']:.0%}  "
+    print(f"\nrerank={'on (' + settings.jina_rerank_model + ')' if settings.rerank_enabled else 'off'}")
+    print(f"facts_in_context={report['facts_in_context_rate']:.0%}  "
           f"hit@{settings.retrieve_top_k}={report['hit_rate']:.0%}  "
           f"top1={report['top1_rate']:.0%}  MRR={report['mrr']:.2f}  (n={report['n']})")
     for cat, stats in report['by_category'].items():
