@@ -110,7 +110,14 @@ st.caption(
     'Every answer is drawn from retrieved passages and cites the articles it used.'
 )
 
-if not st.session_state.messages and 'pending_question' not in st.session_state:
+# Read before the examples so they hide on the run that submits the first question.
+# In the main area the input stays pinned to the bottom wherever it is called.
+typed = st.chat_input(
+    'Ask about golf rules, history, courses, players, or equipment…',
+    disabled=health is None,
+)
+
+if not st.session_state.messages and not typed and 'pending_question' not in st.session_state:
     st.markdown('##### Start with an example')
     columns = st.columns(2)
     for index, example in enumerate(EXAMPLE_QUESTIONS):
@@ -125,10 +132,6 @@ for message in st.session_state.messages:
         else:
             st.markdown(message['content'])
 
-typed = st.chat_input(
-    'Ask about golf rules, history, courses, players, or equipment…',
-    disabled=health is None,
-)
 question = typed or st.session_state.pop('pending_question', None)
 
 if question:
