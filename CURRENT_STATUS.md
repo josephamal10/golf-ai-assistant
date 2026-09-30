@@ -68,10 +68,15 @@ Phase 1 — Static RAG pipeline (in progress)
 
 ## Pending (end of 2026-09-30 session)
 
-- Work is on branch `phase1-rag-improvements`; not merged into `master` yet
-- First commit (`c670f39`) is still authored by the placeholder `AMAL <amal@local>`;
-  optionally rewrite it to Joseph Amal before publishing anywhere
-- Before publishing as a portfolio project: get written OK from Nanonino
+- `master` now holds all the work (fast-forwarded from `phase1-rag-improvements`), and
+  every commit is authored by Joseph Amal: the first commit's placeholder author was
+  rewritten on 2026-09-30, which changed all commit IDs. The pre-rewrite history is kept
+  in the tags `backup/branch-before-author-fix` and `backup/master-before-author-fix`;
+  delete them once you're happy, before publishing
+- Restart the API after pulling in code changes unless it runs with `--reload`: a server
+  started at 11:27 without it kept serving the old code all afternoon
+- Before publishing as a portfolio project: rotate the API keys kept in plain text in
+  `work notes.txt` (outside the repo) and get written OK from Nanonino
 
 ## Next
 
