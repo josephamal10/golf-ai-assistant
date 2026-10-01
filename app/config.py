@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     # among 70 answerable eval questions was 0.34; off-topic ones scored 0.05-0.13.
     rerank_min_score: float = 0.2
 
+    # Phase 2: an LLM call sorts each question into static / live / prediction / off_topic.
+    # Off: every question takes the static path, as in Phase 1.
+    router_enabled: bool = True
+    # Live and prediction questions are answered with Gemini + Google Search. Off (or with
+    # LLM_PROVIDER=claude) they get a short "not available" answer instead.
+    live_search_enabled: bool = True
+
     chunk_target_words: int = 300
     chunk_overlap_words: int = 50
 

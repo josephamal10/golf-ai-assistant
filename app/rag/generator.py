@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any, Protocol
 import logging
 import re
@@ -16,6 +17,7 @@ from tenacity import (
 
 from app.config import settings
 from app.rag.errors import RateLimitedError, UpstreamUnavailableError
+from app.rag.router import LiveAnswer, RouteDecision, parse_route, router_prompt
 
 
 logger = logging.getLogger(__name__)
@@ -41,8 +43,8 @@ Style:
 - Be precise and concise.
 - Prefer official terminology (R&A / USGA wording when present).
 - If the question is about live events, current rankings, or future outcomes,
-  say that this static knowledge base cannot answer that and the live/prediction
-  layers are not enabled yet.
+  say that this static knowledge base cannot answer that, and suggest asking about
+  the current event directly so it is searched on the web.
 
 Never produce your own tournament predictions or betting advice.
 """
@@ -57,6 +59,31 @@ standalone, return it unchanged.
 
 Reply with the question only.
 """
+
+LIVE_PROMPT = """You are a golf assistant answering a question about current or recent golf.
+Today's date is {today}.
+
+Search the web and answer only from what the search finds; do not rely on memory for
+anything recent. Say which event, date or ranking week the facts refer to. If the
+results do not answer the question, say you could not find current information.
+Be precise and concise, under 150 words. Never give betting advice.
+"""
+
+PREDICTION_PROMPT = """You are a golf assistant. The user is asking about a future outcome.
+Today's date is {today}.
+
+Never make your own prediction, pick or forecast. Search the web for published
+predictions, expert picks and betting odds, and report them as opinions, naming who
+holds each one (for example "Golf Digest's panel picks ..."). Begin by saying these are
+other people's opinions, not facts. If the user asks whether to bet, say you do not
+give betting advice, then report who is favoured. Never pass on betting tips, staking
+strategies or which markets to bet on, even when a source suggests them. If you find no
+published predictions, say so. Under 150 words.
+"""
+NO_LIVE_RESULTS = (
+    'I could not find current information about that on the web, so I would rather not '
+    'guess. Try naming the tournament, tour or player.'
+)
 HISTORY_TURNS = 6                                          # last three exchanges
 HISTORY_TURN_CHARS = 1500                                  # long answers add little context
 CITATION_MARK_RE = re.compile(r'\[\d+\]')
@@ -179,9 +206,68 @@ def clean_rewrite(text: str, question: str) -> str:
     return line if 3 <= len(line) <= 2000 else question
 
 
+def _cite_part(text: str, ends: dict[int, set[int]]) -> str:
+    """Insert [n] after each grounded segment. Gemini's segment indices count UTF-8 bytes."""
+    raw = text.encode('utf-8')
+    out, prev = bytearray(), 0
+    for end in sorted(ends):
+        if end > len(raw) or (end < len(raw) and raw[end] & 0xC0 == 0x80):
+            continue                                       # out of range or mid-character
+        out += raw[prev:end] + ''.join(f'[{i + 1}]' for i in sorted(ends[end])).encode()
+        prev = end
+    out += raw[prev:]
+    return out.decode('utf-8')
+
+
+def gemini_live_answer(data: dict[str, Any]) -> LiveAnswer:
+    """Google Search grounded reply → answer with [n] marks, its web sources and suggestions.
+
+    With no grounding chunks the model answered from memory, which is exactly what a
+    question about current events must not do, so that answer is replaced.
+    """
+    candidates = data.get('candidates') or []
+    if not candidates:
+        raise RuntimeError(f'Gemini returned no candidates: {data}')
+    candidate = candidates[0]
+    meta = candidate.get('groundingMetadata') or {}
+    chunks = meta.get('groundingChunks') or []
+    if not chunks:
+        logger.warning('Live answer had no search results behind it; not showing it')
+        return LiveAnswer(text=NO_LIVE_RESULTS, queries=meta.get('webSearchQueries') or [])
+
+    marks: dict[int, dict[int, set[int]]] = {}             # part index → byte end → chunk indices
+    for support in meta.get('groundingSupports') or []:
+        segment = support.get('segment') or {}
+        indices = {i for i in support.get('groundingChunkIndices') or [] if 0 <= i < len(chunks)}
+        if segment.get('endIndex') is None or not indices:
+            continue
+        ends = marks.setdefault(segment.get('partIndex', 0), {})
+        ends.setdefault(segment['endIndex'], set()).update(indices)
+
+    parts = candidate.get('content', {}).get('parts') or []
+    text = ''.join(
+        _cite_part(part['text'], marks.get(index, {}))
+        for index, part in enumerate(parts)
+        if part.get('text') and not part.get('thought')
+    ).strip()
+    if not text:
+        raise RuntimeError(f"Gemini returned an empty live answer (finishReason={candidate.get('finishReason')})")
+    sources = []
+    for chunk in chunks:
+        web = chunk.get('web') or {}
+        sources.append({'title': web.get('title') or 'Web result', 'url': web.get('uri') or ''})
+    return LiveAnswer(
+        text=text,
+        sources=sources,
+        search_suggestions_html=(meta.get('searchEntryPoint') or {}).get('renderedContent', ''),
+        queries=meta.get('webSearchQueries') or [],
+    )
+
+
 class Generator(Protocol):
     provider: str
     model: str
+    supports_live: bool
 
     def generate(self, question: str, matches: list[dict[str, Any]]) -> str:
         ...
@@ -189,11 +275,18 @@ class Generator(Protocol):
     def rewrite_question(self, question: str, history: list[dict[str, str]]) -> str:
         ...
 
+    def classify(self, question: str) -> RouteDecision:
+        ...
+
+    def answer_live(self, question: str, route: str) -> LiveAnswer:
+        ...
+
 
 class GroundedGenerator:
     """Claude Sonnet grounded generation. Kept intact for LLM_PROVIDER=claude."""
 
     provider = 'claude'
+    supports_live = False                                  # web search is wired up for Gemini only
 
     def __init__(self) -> None:
         if not settings.anthropic_api_key:
@@ -213,10 +306,19 @@ class GroundedGenerator:
         text = self._create(REWRITE_PROMPT, rewrite_prompt(question, history), max_tokens=200)
         return clean_rewrite(text, question)
 
-    def _create(self, system: str, content: str, max_tokens: int) -> str:
+    def classify(self, question: str) -> RouteDecision:
+        text = self._create(
+            router_prompt(), question, max_tokens=100, model=settings.anthropic_classifier_model,
+        )
+        return parse_route(text)
+
+    def answer_live(self, question: str, route: str) -> LiveAnswer:
+        raise NotImplementedError('Live answers need LLM_PROVIDER=gemini')
+
+    def _create(self, system: str, content: str, max_tokens: int, model: str | None = None) -> str:
         try:
             message = self._client.messages.create(
-                model=self.model,
+                model=model or self.model,
                 max_tokens=max_tokens,
                 system=system,
                 messages=[{'role': 'user', 'content': content}],
@@ -245,6 +347,7 @@ class GeminiGroundedGenerator:
     """Gemini grounded generation using the same context + citation prompt."""
 
     provider = 'gemini'
+    supports_live = True
 
     def __init__(self) -> None:
         if not settings.google_api_key:
@@ -311,6 +414,43 @@ class GeminiGroundedGenerator:
             logger.warning('Gemini rewrite returned no candidates; using the original question')
             return question
         return clean_rewrite(text, question)
+
+    def classify(self, question: str) -> RouteDecision:
+        payload = {
+            'system_instruction': {'parts': [{'text': router_prompt()}]},
+            'contents': [{'role': 'user', 'parts': [{'text': question}]}],
+            'generationConfig': {
+                'maxOutputTokens': 1024,
+                'temperature': 0.0,
+                'thinkingConfig': {'thinkingLevel': 'minimal'},
+                'responseMimeType': 'application/json',
+                'responseSchema': {
+                    'type': 'OBJECT',
+                    'properties': {
+                        'route': {'type': 'STRING', 'enum': ['static', 'live', 'prediction', 'off_topic']},
+                        'reason': {'type': 'STRING'},
+                    },
+                    'required': ['route'],
+                },
+            },
+        }
+        data = self._post_or_unavailable(GEMINI_URL.format(model=self.model), payload)
+        text, _ = _gemini_visible_text(data)
+        return parse_route(text)
+
+    def answer_live(self, question: str, route: str) -> LiveAnswer:
+        prompt = PREDICTION_PROMPT if route == 'prediction' else LIVE_PROMPT
+        payload = {
+            'system_instruction': {'parts': [{'text': prompt.format(today=date.today().isoformat())}]},
+            'contents': [{'role': 'user', 'parts': [{'text': question}]}],
+            'tools': [{'google_search': {}}],
+            'generationConfig': {
+                'maxOutputTokens': 8192,
+                'temperature': 0.2,
+                'thinkingConfig': {'thinkingLevel': 'minimal'},
+            },
+        }
+        return gemini_live_answer(self._post_or_unavailable(GEMINI_URL.format(model=self.model), payload))
 
     def _post_or_unavailable(self, url: str, payload: dict) -> dict:
         try:

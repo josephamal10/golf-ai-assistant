@@ -4,7 +4,49 @@ Update this file at the end of each working session. Last updated: 2026-10-01.
 
 ## Phase
 
-Phase 1 — Static RAG pipeline (in progress)
+Phase 2 — Query router + live web search (built 2026-10-01). Phase 1 (static RAG) is done.
+
+## Phase 2 — done 2026-10-01
+
+- Router: one LLM call (Gemini, JSON with a fixed list of routes, temperature 0, today's
+  date in the prompt) labels each question `static`, `live`, `prediction` or `off_topic`.
+  Follow-ups are rewritten first, then routed. If the router call fails the question
+  takes the static path. `ROUTER_ENABLED=false` restores Phase 1 behaviour
+- static → the Phase 1 RAG pipeline, unchanged
+- live → Gemini with Google Search grounding: dated answers with the web pages used as
+  `[n]` sources. Citation marks are placed from Google's byte offsets (tested with
+  "Sörenstam"/"Åberg"). An answer with no search results behind it is replaced by "could
+  not find current information" rather than shown from model memory
+- prediction → the same search, but the prompt forbids the model's own picks: it reports
+  published predictions and odds as other people's opinions, says it gives no betting
+  advice, and does not pass on betting tips (a first version relayed "try Top 5 bets to
+  manage risk"; the prompt now forbids staking tips and two re-runs were clean)
+- off_topic → fixed "golf only" reply, no retrieval and no LLM answer (~3 s, the router call)
+- Google's terms for grounded results: answers are shown unedited and Google's search
+  suggestions are displayed with each one (the UI renders `search_suggestions_html`,
+  links open in a new tab)
+- UI: a label above each answer says where it came from (knowledge base / live web
+  search / published predictions / outside golf); web answers list "Web sources"; two
+  new example questions (world number one, Masters favourites)
+- `/health` reports `router` and `live_search`; `LIVE_SEARCH_ENABLED=false` or
+  `LLM_PROVIDER=claude` gives live/prediction questions a short "not enabled" reply
+- Router eval (`scripts/evaluate_router.py`, new set `golf_eval_router.json` with 37
+  live/prediction/off-topic/tricky-static questions, plus the original 50 and hard 25):
+  **111/112 routed correctly (99%)**; live, prediction and off-topic recall 100%. The one
+  miss, q032 "Name the current LPGA major championships", went to web search because of
+  "current"; the web answers it fine, so the prompt was not tuned to this one question.
+  Median 1.7 s per routing call
+- End-to-end with the router on (paid key): hard set 25/25 (the 5 formerly out-of-scope
+  questions now route to prediction/live/off_topic and are checked for route, opinion
+  label and no betting advice), follow-ups 6/6. The answers to h022 and h024 were read by
+  hand: h022 gave the current OWGR number one with the ranking week; h024 said no PGA
+  Tour event finished yesterday and named the one starting today instead of inventing
+  scores
+- Cost: each question now makes one extra small routing call; each live/prediction answer
+  is billed per Google search the model runs. All of today's Phase 2 testing (~112
+  routing calls, ~15 web answers) cost well under a dollar
+- Unit tests: 58 passing (18 new: route parsing, pipeline routing incl. fallbacks, live
+  citations by byte offset, no-results replacement, Gemini request shapes)
 
 ## Done
 
@@ -98,13 +140,23 @@ Phase 1 — Static RAG pipeline (in progress)
   delete them once you're happy, before publishing
 - Restart the API after pulling in code changes unless it runs with `--reload`: a server
   started at 11:27 without it kept serving the old code all afternoon
-- Polish seen in the out-of-scope answers: a refusal cited "[1]", and the UI still shows
-  the retrieved source cards under refusals
+- Polish (now rare, since live/prediction questions no longer reach the static path): a
+  static-path refusal can still cite "[1]" and show the retrieved source cards
+- The original 50-question end-to-end eval was not re-run with the router on (routing for
+  all 50 was checked by the router eval: 49/50 static, q032 → live)
 - Optional: q020's expected keyword ("Scotland") is stricter than the question needs
 - Before publishing as a portfolio project: rotate the API keys kept in plain text in
   `work notes.txt` (outside the repo) and get written OK from Nanonino
 
 ## Next
+
+- Optional: if a static question gets "not enough information", try the web as a
+  fallback (would blur the "knowledge base only" promise, so it should be labelled)
+- Optional: one LLM call for rewrite + route on follow-ups (saves ~1.7 s per follow-up)
+- Optional: live search for `LLM_PROVIDER=claude` (Anthropic's web search tool)
+- Portfolio write-up and a short screen recording (needs Nanonino's OK)
+
+Phase 1 list:
 
 1. ~~End-to-end evals on the full pipeline~~ done 2026-10-01 with the paid key
 2. ~~Harder eval questions~~ done 2026-09-30

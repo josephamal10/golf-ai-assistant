@@ -12,7 +12,7 @@ LEAKY_MESSAGE = "Gemini returned no candidates: {'promptFeedback': {'blockReason
 
 
 class _FailingPipeline:
-    """Stands in for StaticRagPipeline so /ask raises without touching any provider."""
+    """Stands in for AssistantPipeline so /ask raises without touching any provider."""
 
     def __init__(self, exc: Exception) -> None:
         self._exc = exc

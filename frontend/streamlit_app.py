@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import time
 
 import httpx
@@ -12,7 +13,7 @@ ASK_TIMEOUT_SECONDS = 150.0                                # grounded answers ca
 HEALTH_TTL_SECONDS = 30                                    # keeps reruns off the health endpoint
 HISTORY_TURNS = 6                                          # the API only uses the last three exchanges
 
-# One per category, all questions the retrieval eval covers.
+# Knowledge-base questions from the retrieval eval, plus one live and one prediction.
 EXAMPLE_QUESTIONS = [
     'What is the difference between stroke play and match play?',
     "What are the four men's major championships?",
@@ -20,7 +21,17 @@ EXAMPLE_QUESTIONS = [
     'What is the dimple pattern on a golf ball for?',
     'Who jointly writes the Rules of Golf?',
     'What is a mulligan?',
+    "Who is the men's world number one right now?",
+    'Who are the favourites for the next Masters?',
 ]
+# Shown above each answer so it is clear where it came from.
+ROUTE_LABELS = {
+    'static': '📚 From the golf knowledge base',
+    'live': '🌐 From a live web search',
+    'prediction': "🔮 Published predictions from the web: other people's opinions, not facts or betting advice",
+    'off_topic': '⛳ Outside golf',
+}
+LINK_WITHOUT_TARGET_RE = re.compile(r'<a (?![^>]*\btarget=)')
 
 st.set_page_config(
     page_title='Golf AI Assistant',
@@ -61,12 +72,20 @@ def render_sources(sources: list[dict]) -> None:
     """Numbers match the [n] markers in the answer so any claim can be traced back."""
     if not sources:
         return
-    with st.expander(f'Sources ({len(sources)})'):
+    label = 'Web sources' if sources[0].get('category') == 'web' else 'Sources'
+    with st.expander(f'{label} ({len(sources)})'):
         for source in sources:
             with st.container(border=True):
                 st.markdown(f"**[{source['n']}]** [{source['title']}](<{source['url']}>)")
                 if source.get('category'):
                     st.badge(source['category'], color='green')
+
+
+def render_search_suggestions(html: str) -> None:
+    """Google's terms require its search suggestions alongside every web-grounded answer.
+    Links open in a new tab so following one does not end the chat session."""
+    if html:
+        st.html(LINK_WITHOUT_TARGET_RE.sub('<a target="_blank" rel="noopener" ', html))
 
 
 def chat_history(messages: list[dict]) -> list[dict]:
@@ -83,9 +102,12 @@ def render_assistant(message: dict) -> None:
     if message.get('error'):
         st.error(message['content'])
         return
+    if message.get('route') in ROUTE_LABELS:
+        st.caption(ROUTE_LABELS[message['route']])
     if message.get('search_query'):
         st.caption(f"🔎 Searched for: {message['search_query']}")
     st.markdown(message['content'])
+    render_search_suggestions(message.get('search_suggestions_html') or '')
     footnote = [
         part
         for part in (
@@ -106,8 +128,8 @@ health = fetch_health()
 
 st.title('⛳ Golf AI Assistant')
 st.caption(
-    'Ask about rules, history, courses, tournaments, players, or equipment. '
-    'Every answer is drawn from retrieved passages and cites the articles it used.'
+    'Ask about rules, history, courses, tournaments, players, or equipment, or about '
+    'what is happening on tour now. Every answer cites the sources it used.'
 )
 
 # Read before the examples so they hide on the run that submits the first question.
@@ -143,7 +165,7 @@ if question:
     with st.chat_message('assistant'):
         message: dict = {'role': 'assistant'}
         try:
-            with st.spinner('Searching the knowledge base and drafting a cited answer…'):
+            with st.spinner('Finding sources and drafting a cited answer…'):
                 started = time.perf_counter()
                 response = httpx.post(
                     f'{API_URL}/ask',
@@ -156,6 +178,8 @@ if question:
             search_query = data.get('search_query') or ''
             message.update(
                 search_query=search_query if search_query != question else '',
+                route=data.get('route', ''),
+                search_suggestions_html=data.get('search_suggestions_html') or '',
                 content=data.get('answer') or 'No answer returned.',
                 sources=data.get('sources') or [],
                 provider=data.get('provider', ''),
@@ -179,7 +203,7 @@ if question:
 # Sidebar placement is by container, not script order, so it still renders on the left.
 with st.sidebar:
     st.markdown('### ⛳ Golf AI Assistant')
-    st.caption('Phase 1 — static retrieval, grounded answers, always cited.')
+    st.caption('Phase 2 — routed: knowledge base, live web search, or published predictions.')
     st.divider()
 
     if health:
@@ -188,6 +212,8 @@ with st.sidebar:
             f"**Generator**  \n{health.get('llm_provider', 'unknown')} · "
             f"`{health.get('llm_model', 'unknown')}`"
         )
+        if health.get('live_search') == 'off':
+            st.caption('Live web search is off: live and prediction questions get a short notice.')
     else:
         st.error('API offline')
         st.caption(f'Nothing answering at {API_URL}. Start it with:')
@@ -208,7 +234,9 @@ with st.sidebar:
     st.divider()
     st.markdown('**Scope**')
     st.caption(
-        'Answers come only from a static knowledge base of curated Wikipedia articles. '
-        'Live scores, current rankings, and predictions are out of scope in Phase 1.'
+        'Each question is routed first. Golf knowledge is answered only from curated '
+        'Wikipedia articles. Live scores, rankings and news are answered from a Google '
+        'search. Predictions are reported as published opinions, never made up. '
+        'Non-golf questions are declined.'
     )
-    st.caption('Source text from Wikipedia, CC BY-SA 4.0.')
+    st.caption('Knowledge base text from Wikipedia, CC BY-SA 4.0. Web answers grounded with Google Search.')

@@ -144,34 +144,39 @@
     "category": "out_of_scope",
     "question": "Who will win next year's Masters?",
     "expected_sources": [],
-    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide", "cannot predict", "can't predict"]]
+    "expected_route": "prediction",
+    "expected_contains": [["opinion", "opinions"]]
   },
   {
     "id": "h022",
     "category": "out_of_scope",
     "question": "Who is the men's world number one golfer this week?",
     "expected_sources": [],
-    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide", "current rankings"]]
+    "expected_route": "live",
+    "expected_contains": []
   },
   {
     "id": "h023",
     "category": "out_of_scope",
     "question": "Should I bet on Rory McIlroy to win the next Open Championship?",
     "expected_sources": [],
-    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide", "betting advice"]]
+    "expected_route": "prediction",
+    "expected_contains": [["betting advice", "not give betting", "don't give betting", "do not give betting", "not provide betting", "don't provide betting"]]
   },
   {
     "id": "h024",
     "category": "out_of_scope",
     "question": "What were the final scores at yesterday's PGA Tour event?",
     "expected_sources": [],
-    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "not enabled", "static knowledge base", "cannot provide", "can't provide"]]
+    "expected_route": "live",
+    "expected_contains": []
   },
   {
     "id": "h025",
     "category": "out_of_scope",
     "question": "What is the capital of Australia?",
     "expected_sources": [],
-    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "static knowledge base", "cannot provide", "can't provide", "only answer"]]
+    "expected_route": "off_topic",
+    "expected_contains": [["enough information", "cannot answer", "can't answer", "not able to", "unable to", "static knowledge base", "cannot provide", "can't provide", "only answer", "only help with golf"]]
   }
 ]

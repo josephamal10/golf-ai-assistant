@@ -25,10 +25,14 @@ class Source(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     sources: list[Source]
-    route: str
+    # static: knowledge base · live / prediction: Google Search · off_topic: not golf
+    route: Literal['static', 'live', 'prediction', 'off_topic']
+    route_reason: str = ''
     # The standalone question used for search and generation; equals the question
     # unless a follow-up was rewritten using the history.
     search_query: str = ''
+    # Google's search-suggestion chips; its terms require showing them with a web answer.
+    search_suggestions_html: str = ''
     retrieved_chunk_ids: list[str]
     insufficient_context: bool = False
     provider: str = ''

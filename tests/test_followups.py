@@ -8,7 +8,7 @@ import app.api.routes as routes
 from app.main import app
 from app.models.schemas import AskResponse
 from app.rag import generator as gen
-from app.rag.pipeline import StaticRagPipeline
+from app.rag.pipeline import AssistantPipeline
 
 
 HISTORY = [
@@ -46,7 +46,8 @@ class _FakeGenerator:
 
 def test_follow_up_is_rewritten_before_search_and_generation() -> None:
     retriever, generator = _FakeRetriever(), _FakeGenerator('How many majors did Jack Nicklaus win?')
-    response = StaticRagPipeline(retriever, generator).ask('How many majors did he win?', history=HISTORY)
+    pipeline = AssistantPipeline(retriever, generator, use_router=False)
+    response = pipeline.ask('How many majors did he win?', history=HISTORY)
 
     assert generator.rewrite_calls == [('How many majors did he win?', HISTORY)]
     assert retriever.queries == generator.generated_for == ['How many majors did Jack Nicklaus win?']
@@ -55,7 +56,7 @@ def test_follow_up_is_rewritten_before_search_and_generation() -> None:
 
 def test_first_question_skips_the_rewrite_call() -> None:
     retriever, generator = _FakeRetriever(), _FakeGenerator('unused')
-    response = StaticRagPipeline(retriever, generator).ask('Who is Jack Nicklaus?')
+    response = AssistantPipeline(retriever, generator, use_router=False).ask('Who is Jack Nicklaus?')
 
     assert generator.rewrite_calls == []
     assert retriever.queries == ['Who is Jack Nicklaus?']

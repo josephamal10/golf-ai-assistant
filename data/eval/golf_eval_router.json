@@ -1,0 +1,224 @@
+[
+  {
+    "id": "r001",
+    "category": "live",
+    "question": "Who won the most recent PGA Tour event?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r002",
+    "category": "live",
+    "question": "What is Rory McIlroy ranked in the world right now?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r003",
+    "category": "live",
+    "question": "Who is leading the FedEx Cup standings right now?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r004",
+    "category": "live",
+    "question": "What's the latest news on Tiger Woods?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r005",
+    "category": "live",
+    "question": "Who won last week's LPGA tournament?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r006",
+    "category": "live",
+    "question": "When is the next major championship this season?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r007",
+    "category": "live",
+    "question": "Is Jon Rahm playing this week?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r008",
+    "category": "live",
+    "question": "How did Scottie Scheffler do in his last tournament?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r009",
+    "category": "live",
+    "question": "Who is the women's world number one right now?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r010",
+    "category": "live",
+    "question": "What are the current LIV Golf team standings?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r011",
+    "category": "live",
+    "question": "Any injury updates on top golfers this month?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r012",
+    "category": "live",
+    "question": "What's the leaderboard at the tournament happening today?",
+    "expected_route": "live"
+  },
+  {
+    "id": "r013",
+    "category": "prediction",
+    "question": "Who are the favourites for the next Masters?",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r014",
+    "category": "prediction",
+    "question": "What are the odds on Rory McIlroy winning the Open?",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r015",
+    "category": "prediction",
+    "question": "Give me your fantasy golf picks for this week.",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r016",
+    "category": "prediction",
+    "question": "Will Tiger Woods ever win another major?",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r017",
+    "category": "prediction",
+    "question": "Who is going to win the 2027 Ryder Cup?",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r018",
+    "category": "prediction",
+    "question": "Is Ludvig Åberg a good bet for the US Open?",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r019",
+    "category": "prediction",
+    "question": "Predict the winning score at the next Open Championship.",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r020",
+    "category": "prediction",
+    "question": "Which player do experts expect to win the next PGA Championship?",
+    "expected_route": "prediction"
+  },
+  {
+    "id": "r021",
+    "category": "off_topic",
+    "question": "What is the best pizza topping?",
+    "expected_route": "off_topic"
+  },
+  {
+    "id": "r022",
+    "category": "off_topic",
+    "question": "Who won the 2022 FIFA World Cup?",
+    "expected_route": "off_topic"
+  },
+  {
+    "id": "r023",
+    "category": "off_topic",
+    "question": "Explain how a car engine works.",
+    "expected_route": "off_topic"
+  },
+  {
+    "id": "r024",
+    "category": "off_topic",
+    "question": "Write me a poem about the ocean.",
+    "expected_route": "off_topic"
+  },
+  {
+    "id": "r025",
+    "category": "off_topic",
+    "question": "What's the weather like in Paris today?",
+    "expected_route": "off_topic"
+  },
+  {
+    "id": "r026",
+    "category": "off_topic",
+    "question": "How do I hit a tennis serve?",
+    "expected_route": "off_topic"
+  },
+  {
+    "id": "r027",
+    "category": "off_topic",
+    "question": "Who is the best basketball player of all time?",
+    "expected_route": "off_topic"
+  },
+  {
+    "id": "r028",
+    "category": "static_tricky",
+    "question": "Who won the 1986 Masters?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r029",
+    "category": "static_tricky",
+    "question": "How many majors did Tiger Woods win in his career?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r030",
+    "category": "static_tricky",
+    "question": "What was the winning score at the 2000 U.S. Open?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r031",
+    "category": "static_tricky",
+    "question": "What does 'making the cut' mean in a tournament?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r032",
+    "category": "static_tricky",
+    "question": "How does the Official World Golf Ranking system work?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r033",
+    "category": "static_tricky",
+    "question": "What is the rule on anchoring the putter?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r034",
+    "category": "static_tricky",
+    "question": "How are Ryder Cup teams selected?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r035",
+    "category": "static_tricky",
+    "question": "What happened at the 1999 Ryder Cup at Brookline?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r036",
+    "category": "static_tricky",
+    "question": "Why do golfers shout fore?",
+    "expected_route": "static"
+  },
+  {
+    "id": "r037",
+    "category": "static_tricky",
+    "question": "How does the FedEx Cup points system work?",
+    "expected_route": "static"
+  }
+]

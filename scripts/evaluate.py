@@ -79,6 +79,11 @@ def main() -> None:
                 status, payload = 'timeout', {}
             answer = payload.get('answer') or ''
             passed, missing = keyword_verdict(answer, item.get('expected_contains', []))
+            # Items without an expected_route are knowledge-base questions.
+            expected_route = item.get('expected_route', 'static')
+            if status == 200 and payload.get('route') != expected_route:
+                passed = False
+                missing.append(f"route: expected {expected_route}, got {payload.get('route')}")
             if status != 200 or not answer:
                 verdict = 'MISSING'
             elif passed:
@@ -89,6 +94,9 @@ def main() -> None:
                 'id': item['id'],
                 'category': item['category'],
                 'question': item['question'],
+                'expected_route': expected_route,
+                'route': payload.get('route'),
+                'route_reason': payload.get('route_reason'),
                 'search_query': payload.get('search_query'),
                 'model': payload.get('model'),
                 'expected_contains': item.get('expected_contains', []),
@@ -100,7 +108,7 @@ def main() -> None:
                 'missing_keywords': missing,
             })
             print(
-                f"{item['id']} [{status}] {verdict} {item['question'][:70]}",
+                f"{item['id']} [{status}] {verdict} {payload.get('route', '-')}: {item['question'][:70]}",
                 flush=True,
             )
             if status == 429:

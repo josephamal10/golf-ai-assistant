@@ -3,18 +3,18 @@ import logging
 
 from app.models.schemas import AskRequest, AskResponse
 from app.rag.errors import RateLimitedError, UpstreamUnavailableError
-from app.rag.pipeline import StaticRagPipeline
+from app.rag.pipeline import AssistantPipeline
 
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-_pipeline: StaticRagPipeline | None = None
+_pipeline: AssistantPipeline | None = None
 
 
-def get_pipeline() -> StaticRagPipeline:
+def get_pipeline() -> AssistantPipeline:
     global _pipeline
     if _pipeline is None:
-        _pipeline = StaticRagPipeline()
+        _pipeline = AssistantPipeline()
     return _pipeline
 
 

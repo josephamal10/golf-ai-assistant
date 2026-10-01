@@ -1,19 +1,29 @@
 # Golf AI Assistant
 
-Production-oriented golf knowledge assistant for internship delivery. Phase 1 is a
-static RAG pipeline: retrieve from a vector index, then generate answers with an LLM
-(Gemini by default, Claude optional) **only from retrieved context**, with citations.
+Production-oriented golf knowledge assistant for internship delivery. Every question
+is first routed:
 
-Later phases add a query router (live news / rankings) and retrieved expert
-predictions that are labeled as opinion, never model-generated forecasts.
+- **static** (rules, history, players, courses, equipment): a RAG pipeline retrieves
+  from a vector index of Wikipedia articles and an LLM (Gemini by default, Claude
+  optional) answers **only from the retrieved context**, with citations (Phase 1).
+- **live** (current rankings, latest results, this week's events, news): Gemini answers
+  from a Google Search, with the web pages it used as citations (Phase 2).
+- **prediction** (who will win, odds, betting): Gemini searches for published
+  predictions and reports them as other people's opinions. It never makes its own
+  forecast and never gives betting advice (Phase 2).
+- **off_topic** (not golf): a fixed "golf only" reply, with no retrieval or LLM call.
 
-## Architecture (Phase 1)
+## Architecture
 
 ```
-Question
-   → Jina embedding
-   → Pinecone top-20 chunks → Jina reranker keeps the best 6 (grouped by source article)
-   → Gemini or Claude (grounded generation + citations)
+Question (+ recent conversation)
+   → follow-up? LLM rewrites it to stand alone
+   → router (one small LLM call) ─┬─ static     → Jina embedding → Pinecone top 20
+                                  │               → Jina reranker best 6 → LLM answers
+                                  │                 from the passages, cites [n]
+                                  ├─ live       → Gemini + Google Search, cites web pages
+                                  ├─ prediction → Gemini + Google Search, opinions only
+                                  └─ off_topic  → fixed reply
    → FastAPI /ask  →  Streamlit UI
 ```
 
@@ -26,6 +36,8 @@ Question
 | Reranking    | Jina AI (`jina-reranker-v3.5`)                      |
 | Vector DB    | Pinecone serverless                                 |
 | Generation   | Google Gemini (default) or Anthropic Claude, via `LLM_PROVIDER` |
+| Routing      | Same LLM (Gemini, or Claude Haiku), JSON output     |
+| Live search  | Gemini grounding with Google Search                 |
 | UI           | Streamlit (temporary)                               |
 | Sources      | Wikipedia (CC BY-SA) + optional official PDFs       |
 
@@ -94,6 +106,24 @@ reranker (`jina-reranker-v3.5`) reads the question with each one, and the best
 `RERANK_MIN_SCORE` (0.2), the answer is "not enough information" with no LLM call. If the
 reranker is down, the vector order is used. Set `RERANK_ENABLED=false` to turn it off.
 
+Routing: before anything else, one LLM call labels the question `static`, `live`,
+`prediction` or `off_topic` (JSON, temperature 0, with today's date so "this week" means
+something). The response's `route` and `route_reason` say which, and the UI shows it
+above each answer. If the router call fails, the question takes the static path, so a
+router outage never costs an answer. `ROUTER_ENABLED=false` sends everything down the
+static path as in Phase 1. A routed question costs one extra small LLM call (~1.7 s).
+
+Live and prediction answers come from Gemini with Google Search grounding. The answer's
+`[n]` marks are placed from Google's grounding data and the sources are the web pages
+used. If the model answered without any search results behind it, that answer is
+replaced with "I could not find current information", since a memory-based answer about
+current events would be stale. Google's terms for grounded results apply: the answer is
+shown unedited (so the citation clean-up used on static answers is not applied) and the
+`search_suggestions_html` it returns must be displayed with it, which the UI does. Each
+search the model runs is billed. With `LLM_PROVIDER=claude` or
+`LIVE_SEARCH_ENABLED=false`, these questions get a short "live search is not enabled"
+reply.
+
 Follow-up questions work: the UI sends the recent conversation as `history`, and when
 there is history the API first asks the LLM to rewrite the question to stand alone
 ("How many majors did he win?" → "How many majors did Jack Nicklaus win?"), then searches
@@ -110,8 +140,11 @@ Eval set: `data/eval/golf_eval_set.json` (50 questions across categories). Each 
 `expected_contains` (answer keywords) and `expected_sources` (acceptable articles).
 
 Hard set: `data/eval/golf_eval_hard.json` (25 questions): paraphrased terms that don't
-name the article, specific facts buried in articles, and out-of-scope questions (live
-results, predictions, betting, non-golf) whose expected answer is a refusal. Run either
+name the article, specific facts buried in articles, and 5 questions the knowledge base
+can't answer (live results, predictions, betting, non-golf). Those carry an
+`expected_route`: the end-to-end eval checks the route, that predictions are labelled
+as opinions, that betting questions get no betting advice, and that the non-golf one is
+declined. Run either
 script on it with `--eval-file data/eval/golf_eval_hard.json`; results go to
 `last_*.golf_eval_hard.json`. Out-of-scope items have no expected article, so the
 retrieval eval reports them without scoring them.
@@ -141,6 +174,19 @@ Follow-ups: `data/eval/golf_eval_followups.json` (6 items) gives each question t
 conversation it depends on. The end-to-end eval sends that history; the retrieval eval
 searches the raw follow-up, which shows how badly it does without the rewrite.
 
+Router: `data/eval/golf_eval_router.json` (37 questions: live, prediction, off-topic,
+and tricky static ones such as "Who won the 1986 Masters?"). The router eval classifies
+these plus the original and hard sets (questions with no `expected_route` are static):
+one small LLM call per question, no API server needed, about 3 minutes:
+
+```powershell
+python scripts/evaluate_router.py
+```
+
+It reports accuracy, per-route recall and precision, and every misroute, and writes
+`data/eval/last_router_run.json`. The end-to-end eval also fails an answer whose route
+differs from the expected one.
+
 ## Tests
 
 ```powershell
@@ -159,8 +205,8 @@ python -m pytest
 ```
 app/            FastAPI app, RAG, ingestion
 data/catalogs/  Curated Wikipedia title list
-data/eval/      Hand-built Q&A eval set
+data/eval/      Hand-built eval sets (Q&A, hard, follow-ups, router)
 frontend/       Streamlit UI
 scripts/        collect → chunk → embed → evaluate
-tests/          Unit tests (chunker, citations, schemas)
+tests/          Unit tests (chunker, citations, routing, live answers, API errors)
 ```

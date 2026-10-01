@@ -3,7 +3,7 @@ import re
 import pytest
 
 from app.rag.generator import drop_invalid_citations, format_context, user_prompt
-from app.rag.pipeline import StaticRagPipeline, _dedupe_sources
+from app.rag.pipeline import AssistantPipeline, _dedupe_sources
 
 
 def _match(title: str, text: str, section: str = '') -> dict:
@@ -71,6 +71,7 @@ def test_pipeline_never_returns_a_citation_without_a_source() -> None:
         def generate(self, question: str, matches: list[dict]) -> str:
             return 'Jack Nicklaus won 18 majors [1][2][3].'
 
-    response = StaticRagPipeline(_OneArticleRetriever(), _OverCitingGenerator()).ask('How many majors?')
+    pipeline = AssistantPipeline(_OneArticleRetriever(), _OverCitingGenerator(), use_router=False)
+    response = pipeline.ask('How many majors?')
     assert len(response.sources) == 1
     assert response.answer == 'Jack Nicklaus won 18 majors [1].'
