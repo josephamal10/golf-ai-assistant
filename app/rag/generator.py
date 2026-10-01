@@ -31,6 +31,9 @@ player records, or course facts.
 Citations:
 - Cite supporting passages with bracket numbers that match the context items,
   e.g. [1] or [1][3].
+- Use only the numbers that label context items. An item can contain several
+  passages from the same article; they all share that item's number, so never
+  number passages yourself.
 - Every factual sentence should have at least one citation.
 - Do not cite a source you did not use.
 
@@ -135,7 +138,28 @@ def empty_answer() -> str:
 
 
 def user_prompt(question: str, matches: list[dict[str, Any]]) -> str:
-    return f'Question:\n{question}\n\nRetrieved context:\n{format_context(matches)}'
+    n = len(group_by_source(matches))
+    numbers = '[1]' if n == 1 else f'[1] to [{n}]'
+    return (
+        f'Question:\n{question}\n\n'
+        f'Retrieved context ({n} source{"s" if n != 1 else ""}; cite only {numbers}):\n'
+        f'{format_context(matches)}'
+    )
+
+
+def drop_invalid_citations(answer: str, n_sources: int) -> str:
+    """Remove [n] markers with no matching source, so every citation shown resolves.
+
+    Seen live: with six passages from one article (one source), the model cited
+    [1][2][3] and the UI listed a single source.
+    """
+    def keep(match: re.Match[str]) -> str:
+        return match.group(0) if 1 <= int(match.group(2)) <= n_sources else ''
+
+    cleaned = re.sub(r'(\s?)\[(\d+)\]', keep, answer)
+    if cleaned != answer:
+        logger.warning('Dropped citations beyond the %s returned sources', n_sources)
+    return cleaned
 
 
 def rewrite_prompt(question: str, history: list[dict[str, str]]) -> str:

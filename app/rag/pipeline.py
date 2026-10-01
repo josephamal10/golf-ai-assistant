@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.models.schemas import AskResponse, Source
-from app.rag.generator import Generator, build_generator, group_by_source
+from app.rag.generator import Generator, build_generator, drop_invalid_citations, group_by_source
 from app.rag.retriever import Retriever
 
 
@@ -21,8 +21,8 @@ class StaticRagPipeline:
         # history the question is first rewritten to stand alone. One extra LLM call.
         search_query = self.generator.rewrite_question(question, history) if history else question
         matches = self.retriever.retrieve(search_query)
-        answer = self.generator.generate(search_query, matches)
         sources = _dedupe_sources(matches)
+        answer = drop_invalid_citations(self.generator.generate(search_query, matches), len(sources))
         insufficient = len(matches) == 0
         return AskResponse(
             answer=answer,

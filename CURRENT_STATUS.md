@@ -79,7 +79,14 @@ Phase 1 — Static RAG pipeline (in progress)
   use 20 s x 3 tries (~65 s worst case), reranking 10 s x 2 (~21 s) before falling back
   to vector order. evaluate.py records a timed-out question and carries on, and takes
   `--gap` (5 s is enough on a paid key; 1 s tripped Jina's rate limit)
-- Unit tests: 34 passing (chunker, citations, schemas, generator errors, API error mapping,
+- Citation numbers beyond the sources (2026-10-01): found by hand in the UI ("[1][2][3]"
+  with one source) and in 2 of 81 saved eval answers (q035, q036). All were single-article
+  contexts, where the model numbered the passages itself. The prompt now states which
+  numbers exist ("cite only [1]") and that passages in one item share its number: 6/6 raw
+  answers on those questions were then clean. As a safety net the pipeline also drops any
+  [n] with no matching source
+- `start.bat`: double-click to start the API (with `--reload`) and the chat page
+- Unit tests: 40 passing (chunker, citations, schemas, generator errors, API error mapping,
   disambiguation detection, follow-up rewriting, reranking, embedding timeouts)
 
 ## Pending (2026-10-01)

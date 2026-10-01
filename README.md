@@ -68,6 +68,10 @@ Optional: drop a licensed Rules of Golf PDF in `data/raw/pdfs/` and re-run colle
 
 ## Run
 
+On Windows, double-click `start.bat`: it opens the API (with `--reload`) and the chat
+page in two windows and the page opens at http://localhost:8501. Close both windows to
+stop. Or start them yourself:
+
 ```powershell
 # API
 uvicorn app.main:app --reload --port 8001
