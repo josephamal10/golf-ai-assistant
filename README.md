@@ -127,7 +127,9 @@ End to end (answers from `/ask`; the API must be running):
 python scripts/evaluate.py
 ```
 
-It waits 28 seconds between questions to respect free-tier limits, stops early at the
+It waits 28 seconds between questions to respect free-tier limits (`--gap 5` is plenty
+on a paid Gemini key; much faster than that can trip Jina's rate limit), records a
+question that times out and carries on, stops early at the
 first HTTP 429, and writes `data/eval/last_run.json`. Use `--limit N` to run fewer and
 `--start N` to resume after the first N (a resumed run writes its own `.startN` file).
 

@@ -1,6 +1,6 @@
 # Current status — Golf AI Assistant
 
-Update this file at the end of each working session. Last updated: 2026-09-30.
+Update this file at the end of each working session. Last updated: 2026-10-01.
 
 ## Phase
 
@@ -53,7 +53,7 @@ Phase 1 — Static RAG pipeline (in progress)
   rewrites the question to stand alone (`search_query` in the response, shown in the UI).
   6-item follow-up set `data/eval/golf_eval_followups.json`. Searching the raw follow-ups
   without the rewrite: right article first for only 2/6 (hit 4/6); the with-rewrite
-  number needs an end-to-end run
+  number needs an end-to-end run (done 2026-10-01, see below)
 - Reranking (2026-09-30): Pinecone top 20 → `jina-reranker-v3.5` → best 6, falling back to
   vector order if the reranker fails. Right article ranked first, off → on: original set
   96% → 100%, hard set 90% → 100% (paraphrased 80% → 100%), raw follow-ups 33% → 50%.
@@ -63,10 +63,26 @@ Phase 1 — Static RAG pipeline (in progress)
   questions: 0.34; off-topic/unsupported: 0.05 (capital of Australia), 0.13 (yesterday's
   scores). Golf prediction/ranking questions score 0.36–0.47, so they still need the
   Phase 2 router
-- Unit tests: 32 passing (chunker, citations, schemas, generator errors, API error mapping,
-  disambiguation detection, follow-up rewriting, reranking)
+- **End-to-end on the full pipeline with the company's paid Gemini key (2026-09-30/10-01):**
+  - Follow-ups 6/6: every rewrite resolved its reference (he → Jack Nicklaus, it → the
+    Masters, the first official one → the Ryder Cup, she → Annika Sörenstam, they → links
+    courses) and the topic change ("What is a birdie?") was left unchanged
+  - Hard set 25/25, including all 5 out-of-scope questions: the 3 golf prediction/ranking/
+    betting questions were refused by the prompt with no prediction; the 2 off-topic ones
+    were stopped by the relevance cutoff with no LLM call
+  - Original set 49/50. The one FAIL (q020) is a grader false negative seen since August:
+    the answer is correct but doesn't contain the expected keyword "Scotland"
+  - Key verified as paid before use: it can call the paid-only `gemini-3.1-pro-preview`
+    and responses report `serviceTier: standard`
+- Request-path timeouts (2026-10-01): a throttled Jina once held one /ask for ~190 s
+  (query embedding used the ingestion budget of 120 s x 6 tries). Query embeddings now
+  use 20 s x 3 tries (~65 s worst case), reranking 10 s x 2 (~21 s) before falling back
+  to vector order. evaluate.py records a timed-out question and carries on, and takes
+  `--gap` (5 s is enough on a paid key; 1 s tripped Jina's rate limit)
+- Unit tests: 34 passing (chunker, citations, schemas, generator errors, API error mapping,
+  disambiguation detection, follow-up rewriting, reranking, embedding timeouts)
 
-## Pending (end of 2026-09-30 session)
+## Pending (2026-10-01)
 
 - `master` now holds all the work (fast-forwarded from `phase1-rag-improvements`), and
   every commit is authored by Joseph Amal: the first commit's placeholder author was
@@ -75,26 +91,23 @@ Phase 1 — Static RAG pipeline (in progress)
   delete them once you're happy, before publishing
 - Restart the API after pulling in code changes unless it runs with `--reload`: a server
   started at 11:27 without it kept serving the old code all afternoon
+- Polish seen in the out-of-scope answers: a refusal cited "[1]", and the UI still shows
+  the retrieved source cards under refusals
+- Optional: q020's expected keyword ("Scotland") is stricter than the question needs
 - Before publishing as a portfolio project: rotate the API keys kept in plain text in
   `work notes.txt` (outside the repo) and get written OK from Nanonino
 
 ## Next
 
-1. Finish the end-to-end evals within the daily Gemini quota (20 calls; each follow-up
-   uses 2), e.g. one per day. Both now run on the reranked pipeline:
-   - `python scripts/evaluate.py --eval-file data/eval/golf_eval_hard.json --start 15`
-     (10 calls; includes the 5 out-of-scope refusals)
-   - `python scripts/evaluate.py --eval-file data/eval/golf_eval_followups.json` (12 calls)
+1. ~~End-to-end evals on the full pipeline~~ done 2026-10-01 with the paid key
 2. ~~Harder eval questions~~ done 2026-09-30
-3. ~~Follow-up questions~~ built 2026-09-30; verify with the follow-up eval above
+3. ~~Follow-up questions~~ done 2026-09-30, verified 6/6 on 2026-10-01
 4. ~~Reranking~~ done 2026-09-30. Hybrid keyword + vector search only if a harder eval
    shows reranking isn't enough
 5. Optional: licensed Rules of Golf PDF in `data/raw/pdfs/`
 
 ## Blockers
 
-- Gemini free-tier quota: 20 requests per day **per model**
-  (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, confirmed from the 429 details),
-  so end-to-end evals run in daily slices. A second Gemini model for rewrites would
-  double the budget
+- ~~Gemini free-tier quota~~ (20 requests/day per model): resolved by the company's paid
+  key. Free keys still hit it, and Jina's rate limit is now the first one a fast eval hits
 - No official Rules PDF yet (Wikipedia only)

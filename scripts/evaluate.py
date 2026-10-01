@@ -14,7 +14,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 EVAL_PATH = ROOT / 'data' / 'eval' / 'golf_eval_set.json'
 OUT_PATH = ROOT / 'data' / 'eval' / 'last_run.json'
-EVAL_GAP_SECONDS = 28
+EVAL_GAP_SECONDS = 28                                      # free-tier pacing; paid keys can use --gap 1
 
 
 def _norm(text: str) -> str:
@@ -44,6 +44,10 @@ def main() -> None:
         '--start', type=int, default=0,
         help='skip the first N questions, e.g. to resume a run the quota cut short',
     )
+    parser.add_argument(
+        '--gap', type=float, default=EVAL_GAP_SECONDS,
+        help=f'seconds between questions (default {EVAL_GAP_SECONDS}, for free-tier limits)',
+    )
     args = parser.parse_args()
     out_path = (
         OUT_PATH if args.eval_file.resolve() == EVAL_PATH
@@ -63,15 +67,19 @@ def main() -> None:
         health = client.get(f'{args.base_url}/health')
         health.raise_for_status()
         for index, item in enumerate(items):
-            response = client.post(
-                f'{args.base_url}/ask',
-                # Follow-up items carry the earlier conversation the question depends on.
-                json={'question': item['question'], 'history': item.get('history', [])},
-            )
-            payload = response.json()
+            try:
+                response = client.post(
+                    f'{args.base_url}/ask',
+                    # Follow-up items carry the earlier conversation the question depends on.
+                    json={'question': item['question'], 'history': item.get('history', [])},
+                )
+                status, payload = response.status_code, response.json()
+            except httpx.TimeoutException:
+                # One slow question must not lose the whole run: record it and carry on.
+                status, payload = 'timeout', {}
             answer = payload.get('answer') or ''
             passed, missing = keyword_verdict(answer, item.get('expected_contains', []))
-            if response.status_code != 200 or not answer:
+            if status != 200 or not answer:
                 verdict = 'MISSING'
             elif passed:
                 verdict = 'PASS'
@@ -82,8 +90,9 @@ def main() -> None:
                 'category': item['category'],
                 'question': item['question'],
                 'search_query': payload.get('search_query'),
+                'model': payload.get('model'),
                 'expected_contains': item.get('expected_contains', []),
-                'status_code': response.status_code,
+                'status_code': status,
                 'answer': payload.get('answer'),
                 'sources': payload.get('sources', []),
                 'insufficient_context': payload.get('insufficient_context'),
@@ -91,15 +100,15 @@ def main() -> None:
                 'missing_keywords': missing,
             })
             print(
-                f"{item['id']} [{response.status_code}] {verdict} {item['question'][:70]}",
+                f"{item['id']} [{status}] {verdict} {item['question'][:70]}",
                 flush=True,
             )
-            if response.status_code == 429:
+            if status == 429:
                 rate_limited = True
                 print('Rate limited or out of quota; stopping early and saving partial results.')
                 break
             if index < len(items) - 1:
-                time.sleep(EVAL_GAP_SECONDS)
+                time.sleep(args.gap)
 
     n = len(results)
     n_pass = sum(1 for r in results if r['verdict'] == 'PASS')

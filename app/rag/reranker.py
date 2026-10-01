@@ -28,7 +28,7 @@ class Reranker:
             raise RuntimeError('JINA_API_KEY is missing. Add it to .env')
         self.model = settings.jina_rerank_model
         self._client = httpx.Client(
-            timeout=30.0,
+            timeout=10.0,
             headers={
                 'Authorization': f'Bearer {settings.jina_api_key}',
                 'Content-Type': 'application/json',
@@ -57,8 +57,9 @@ class Reranker:
         return reranked
 
     @retry(
-        # In the request path, so a short budget: a slow rerank falls back to vector order.
-        stop=stop_after_attempt(3),
+        # In the request path, so a short budget (~21 s worst case): a slow or throttled
+        # rerank falls back to vector order instead of holding up the answer.
+        stop=stop_after_attempt(2),
         wait=wait_exponential(multiplier=1, min=1, max=4),
         retry=retry_if_exception(_is_retryable),
         reraise=True,
