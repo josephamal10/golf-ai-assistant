@@ -1,5 +1,7 @@
 # Golf AI Assistant
 
+[![tests](https://github.com/josephamal10/golf-ai-assistant/actions/workflows/tests.yml/badge.svg)](https://github.com/josephamal10/golf-ai-assistant/actions/workflows/tests.yml)
+
 A golf question-answering assistant built during an internship at Nanonino to learn
 LLMs and retrieval-augmented generation (RAG). Every answer cites its sources. Every
 question is first routed:
@@ -88,7 +90,7 @@ beyond the evals.
 ## Setup
 
 ```powershell
-git clone <this repo's URL>
+git clone https://github.com/josephamal10/golf-ai-assistant.git
 cd golf-ai-assistant
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
