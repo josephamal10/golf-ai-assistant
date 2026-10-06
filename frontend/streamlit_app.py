@@ -108,10 +108,12 @@ def render_assistant(message: dict) -> None:
         st.caption(f"🔎 Searched for: {message['search_query']}")
     st.markdown(message['content'])
     render_search_suggestions(message.get('search_suggestions_html') or '')
+    # Off-topic replies are fixed text, so naming a model would suggest it wrote them.
+    show_model = message.get('model') and message.get('route') != 'off_topic'
     footnote = [
         part
         for part in (
-            f"{message.get('provider')} · {message.get('model')}" if message.get('model') else '',
+            f"{message.get('provider')} · {message.get('model')}" if show_model else '',
             f"{message['elapsed']:.1f}s" if message.get('elapsed') else '',
         )
         if part

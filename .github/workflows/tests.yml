@@ -1,0 +1,22 @@
+# Runs the unit tests on every push and pull request. They use fakes and mock HTTP
+# transports, so no API keys or secrets are needed and nothing is billed.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q

@@ -1,7 +1,8 @@
 # Golf AI Assistant
 
-Production-oriented golf knowledge assistant for internship delivery. Every question
-is first routed:
+A golf question-answering assistant built during an internship at Nanonino to learn
+LLMs and retrieval-augmented generation (RAG). Every answer cites its sources. Every
+question is first routed:
 
 - **static** (rules, history, players, courses, equipment): a RAG pipeline retrieves
   from a vector index of Wikipedia articles and an LLM (Gemini by default, Claude
@@ -13,19 +14,62 @@ is first routed:
   forecast and never gives betting advice (Phase 2).
 - **off_topic** (not golf): a fixed "golf only" reply, with no retrieval or LLM call.
 
+Measured on hand-built eval sets (details in [Eval](#eval)): the right article ranked
+first for 100% of answerable questions, 111 of 112 questions routed correctly, and 25/25
+hard questions answered correctly end to end.
+
 ## Architecture
 
+```mermaid
+flowchart TD
+    Q[Question + recent conversation] --> RW{Follow-up?}
+    RW -- yes --> REW[LLM rewrites it to stand alone<br/>'he' → 'Jack Nicklaus']
+    RW -- no --> R
+    REW --> R[Router: one small LLM call]
+    R -- static --> E[Jina embedding of the question]
+    E --> P[Pinecone: 20 closest passages]
+    P --> RR[Jina reranker keeps the best 6]
+    RR -- best score below 0.2 --> NI[Not enough information<br/>no LLM call]
+    RR --> G[LLM answers only from the passages<br/>and cites them as 1, 2, ...]
+    R -- live --> WS[Gemini + Google Search<br/>dated answer, web sources]
+    R -- prediction --> WP[Gemini + Google Search<br/>published opinions only, no betting advice]
+    R -- off_topic --> OT[Fixed 'golf only' reply]
+    G --> API[FastAPI /ask] --> UI[Streamlit chat page]
+    NI --> API
+    WS --> API
+    WP --> API
+    OT --> API
 ```
-Question (+ recent conversation)
-   → follow-up? LLM rewrites it to stand alone
-   → router (one small LLM call) ─┬─ static     → Jina embedding → Pinecone top 20
-                                  │               → Jina reranker best 6 → LLM answers
-                                  │                 from the passages, cites [n]
-                                  ├─ live       → Gemini + Google Search, cites web pages
-                                  ├─ prediction → Gemini + Google Search, opinions only
-                                  └─ off_topic  → fixed reply
-   → FastAPI /ask  →  Streamlit UI
+
+The knowledge base is built once, ahead of time:
+
+```mermaid
+flowchart LR
+    W[143 Wikipedia articles] --> C[1,802 passages<br/>~300 words, 50 overlap]
+    C --> EM[Jina embeddings<br/>1,024 numbers each]
+    EM --> PC[(Pinecone index)]
 ```
+
+## Quick start for Nanonino colleagues
+
+The Pinecone index is already built, so with the team's keys you only need to:
+
+1. Clone the repo and create the environment (see [Setup](#setup)).
+2. Put the team's `JINA_API_KEY`, `PINECONE_API_KEY` and `GOOGLE_API_KEY` in `.env`.
+   Get them privately from the project owner; never commit `.env` or paste keys in chat.
+3. On Windows double-click `start.bat`, or start the API and UI as in [Run](#run).
+
+You do **not** need to run the ingest steps below.
+
+> [!WARNING]
+> **Never run `scripts/embed_and_upsert.py --recreate` against the shared index.** It
+> deletes the whole Pinecone index and rebuilds it, which breaks the app for everyone
+> until it finishes and spends embedding credit. Only the project owner should rebuild,
+> and only after re-chunking or changing the embedding model.
+
+Every question costs a little on the team's paid keys (a fraction of a cent for
+knowledge-base answers, a cent or two for web answers), so avoid scripted bulk runs
+beyond the evals.
 
 ## Stack
 
@@ -44,7 +88,8 @@ Question (+ recent conversation)
 ## Setup
 
 ```powershell
-cd "C:\Nanonino files-RAG\golf-ai-assistant"
+git clone <this repo's URL>
+cd golf-ai-assistant
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -195,6 +240,7 @@ python -m pytest
 
 ## Source and license notes
 
+- Code: MIT, see [LICENSE](LICENSE).
 - Wikipedia text is collected via the MediaWiki API and is CC BY-SA 4.0. Downstream
   answers that quote it should keep attribution (the API already returns source URLs).
 - The official Rules of Golf are copyright USGA / R&A. Do not scrape their sites.

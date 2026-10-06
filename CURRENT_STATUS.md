@@ -1,6 +1,6 @@
 # Current status — Golf AI Assistant
 
-Update this file at the end of each working session. Last updated: 2026-10-01.
+Update this file at the end of each working session. Last updated: 2026-10-06.
 
 ## Phase
 
@@ -47,6 +47,25 @@ Phase 2 — Query router + live web search (built 2026-10-01). Phase 1 (static R
   routing calls, ~15 web answers) cost well under a dollar
 - Unit tests: 58 passing (18 new: route parsing, pipeline routing incl. fallbacks, live
   citations by byte offset, no-results replacement, Gemini request shapes)
+- Original 50-question end-to-end eval with the router on (2026-10-06): 48/50 by the
+  keyword check, 50/50 correct when the two FAILs were read: q020 (known, see Pending)
+  and q037, whose answer says "Swedish" where the check wants "Sweden". q032 routed to
+  static this time (it went to live in the router eval)
+
+## Publishing (2026-10-06)
+
+- Nanonino approved publishing the project and keeping it in Joseph's portfolio
+- Target: a public repo on Joseph's personal GitHub account, MIT license (`LICENSE`)
+- Before publishing: every commit, including the old pre-author-fix history, was searched
+  for Gemini, Claude, Jina and Pinecone key patterns (none found); `.env` is ignored; the
+  collected Wikipedia text (`data/raw`, `data/processed`) is not in the repo. The two
+  `backup/...` tags from the author fix were deleted
+- GitHub Actions (`.github/workflows/tests.yml`) runs the 58 unit tests on every push.
+  They use fakes and mock HTTP, so no secrets are configured and nothing is billed
+  (checked by running them in a clean checkout with no `.env`)
+- README: pipeline diagrams (Mermaid, checked to render), and a quick start for
+  colleagues with a warning never to run `embed_and_upsert.py --recreate` on the shared
+  index
 
 ## Done
 
@@ -131,22 +150,14 @@ Phase 2 — Query router + live web search (built 2026-10-01). Phase 1 (static R
 - Unit tests: 40 passing (chunker, citations, schemas, generator errors, API error mapping,
   disambiguation detection, follow-up rewriting, reranking, embedding timeouts)
 
-## Pending (2026-10-01)
+## Pending (2026-10-06)
 
-- `master` now holds all the work (fast-forwarded from `phase1-rag-improvements`), and
-  every commit is authored by Joseph Amal: the first commit's placeholder author was
-  rewritten on 2026-09-30, which changed all commit IDs. The pre-rewrite history is kept
-  in the tags `backup/branch-before-author-fix` and `backup/master-before-author-fix`;
-  delete them once you're happy, before publishing
-- Restart the API after pulling in code changes unless it runs with `--reload`: a server
-  started at 11:27 without it kept serving the old code all afternoon
+- Restart the API after pulling in code changes unless it runs with `--reload` (which
+  `start.bat` uses): a server started without it keeps serving the old code
 - Polish (now rare, since live/prediction questions no longer reach the static path): a
   static-path refusal can still cite "[1]" and show the retrieved source cards
-- The original 50-question end-to-end eval was not re-run with the router on (routing for
-  all 50 was checked by the router eval: 49/50 static, q032 → live)
-- Optional: q020's expected keyword ("Scotland") is stricter than the question needs
-- Before publishing as a portfolio project: rotate the API keys kept in plain text in
-  `work notes.txt` (outside the repo) and get written OK from Nanonino
+- Optional: two eval keywords are stricter than the questions need, so correct answers
+  fail the keyword check: q020 ("Scotland") and q037 ("Sweden", answer says "Swedish")
 
 ## Next
 
@@ -154,7 +165,9 @@ Phase 2 — Query router + live web search (built 2026-10-01). Phase 1 (static R
   fallback (would blur the "knowledge base only" promise, so it should be labelled)
 - Optional: one LLM call for rewrite + route on follow-ups (saves ~1.7 s per follow-up)
 - Optional: live search for `LLM_PROVIDER=claude` (Anthropic's web search tool)
-- Portfolio write-up and a short screen recording (needs Nanonino's OK)
+- Portfolio write-up and a short screen recording
+- Refresh the Wikipedia collection now and then (collected Aug–Sep 2026; player records
+  go stale). Re-collect, re-chunk, then rebuild the index with `--recreate`
 
 Phase 1 list:
 
