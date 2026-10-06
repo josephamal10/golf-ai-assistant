@@ -55,7 +55,7 @@ Phase 2 — Query router + live web search (built 2026-10-01). Phase 1 (static R
 ## Publishing (2026-10-06)
 
 - Nanonino approved publishing the project and keeping it in Joseph's portfolio
-- Target: a public repo on Joseph's personal GitHub account, MIT license (`LICENSE`)
+- Published: https://github.com/josephamal10/golf-ai-assistant (public, MIT license); CI passed on the first push
 - Before publishing: every commit, including the old pre-author-fix history, was searched
   for Gemini, Claude, Jina and Pinecone key patterns (none found); `.env` is ignored; the
   collected Wikipedia text (`data/raw`, `data/processed`) is not in the repo. The two
