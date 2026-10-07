@@ -1,6 +1,6 @@
 # CaddieAI
 
-[![tests](https://github.com/josephamal10/golf-ai-assistant/actions/workflows/tests.yml/badge.svg)](https://github.com/josephamal10/golf-ai-assistant/actions/workflows/tests.yml)
+[![tests](https://github.com/josephamal10/CaddieAI/actions/workflows/tests.yml/badge.svg)](https://github.com/josephamal10/CaddieAI/actions/workflows/tests.yml)
 
 **CaddieAI** is a golf question-answering assistant built during an internship at
 Nanonino to learn LLMs and retrieval-augmented generation (RAG). Every answer cites
@@ -90,8 +90,8 @@ beyond the evals.
 ## Setup
 
 ```powershell
-git clone https://github.com/josephamal10/golf-ai-assistant.git
-cd golf-ai-assistant
+git clone https://github.com/josephamal10/CaddieAI.git
+cd CaddieAI
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt

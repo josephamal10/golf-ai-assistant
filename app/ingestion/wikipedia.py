@@ -21,7 +21,7 @@ WIKI_API = 'https://en.wikipedia.org/w/api.php'
 # Wikimedia requires a descriptive UA with a URL and contact, or requests get 403.
 USER_AGENT = (
     'CaddieAI/0.1 '
-    '(https://github.com/josephamal10/golf-ai-assistant)'
+    '(https://github.com/josephamal10/CaddieAI)'
 )
 RAW_DIR = DATA_DIR / 'raw' / 'wikipedia'
 REF_MARK_RE = re.compile(r'\[\d+\]')
