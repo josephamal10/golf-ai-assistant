@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 WIKI_API = 'https://en.wikipedia.org/w/api.php'
 # Wikimedia requires a descriptive UA with a URL and contact, or requests get 403.
 USER_AGENT = (
-    'GolfAIAssistant/0.1 '
-    '(https://en.wikipedia.org/wiki/User:GolfAIIntern; golf-ai-assistant@example.com)'
+    'CaddieAI/0.1 '
+    '(https://github.com/josephamal10/golf-ai-assistant)'
 )
 RAW_DIR = DATA_DIR / 'raw' / 'wikipedia'
 REF_MARK_RE = re.compile(r'\[\d+\]')

@@ -1,10 +1,10 @@
-# Golf AI Assistant
+# CaddieAI
 
 [![tests](https://github.com/josephamal10/golf-ai-assistant/actions/workflows/tests.yml/badge.svg)](https://github.com/josephamal10/golf-ai-assistant/actions/workflows/tests.yml)
 
-A golf question-answering assistant built during an internship at Nanonino to learn
-LLMs and retrieval-augmented generation (RAG). Every answer cites its sources. Every
-question is first routed:
+**CaddieAI** is a golf question-answering assistant built during an internship at
+Nanonino to learn LLMs and retrieval-augmented generation (RAG). Every answer cites
+its sources. Every question is first routed:
 
 - **static** (rules, history, players, courses, equipment): a RAG pipeline retrieves
   from a vector index of Wikipedia articles and an LLM (Gemini by default, Claude

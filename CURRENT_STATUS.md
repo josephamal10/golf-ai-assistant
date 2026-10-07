@@ -1,4 +1,4 @@
-# Current status — Golf AI Assistant
+# Current status — CaddieAI
 
 Update this file at the end of each working session. Last updated: 2026-10-06.
 

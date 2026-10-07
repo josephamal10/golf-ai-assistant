@@ -1,3 +1,3 @@
-"""Golf AI Assistant — Phase 1 static RAG."""
+"""CaddieAI — golf question answering with routed RAG and live web search."""
 
 __version__ = '0.1.0'

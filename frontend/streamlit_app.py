@@ -34,7 +34,7 @@ ROUTE_LABELS = {
 LINK_WITHOUT_TARGET_RE = re.compile(r'<a (?![^>]*\btarget=)')
 
 st.set_page_config(
-    page_title='Golf AI Assistant',
+    page_title='CaddieAI',
     page_icon='⛳',
     layout='centered',
     initial_sidebar_state='expanded',
@@ -128,7 +128,7 @@ if 'messages' not in st.session_state:
 
 health = fetch_health()
 
-st.title('⛳ Golf AI Assistant')
+st.title('⛳ CaddieAI')
 st.caption(
     'Ask about rules, history, courses, tournaments, players, or equipment, or about '
     'what is happening on tour now. Every answer cites the sources it used.'
@@ -204,7 +204,7 @@ if question:
 # Drawn last, so controls reflect the conversation after this turn was appended.
 # Sidebar placement is by container, not script order, so it still renders on the left.
 with st.sidebar:
-    st.markdown('### ⛳ Golf AI Assistant')
+    st.markdown('### ⛳ CaddieAI')
     st.caption('Phase 2 — routed: knowledge base, live web search, or published predictions.')
     st.divider()
 
